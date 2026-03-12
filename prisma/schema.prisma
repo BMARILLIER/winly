@@ -1,0 +1,148 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  name         String?
+  passwordHash String
+  role         String          @default("free") // free, pro, team, admin
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  workspaces     Workspace[]
+  audits         AuditResult[]
+  scores         ScoreResult[]
+  creatorScores  CreatorScore[]
+  adminLogs      AdminLog[]
+}
+
+model Workspace {
+  id             String          @id @default(cuid())
+  name           String
+  profileType    String          // personal_brand, business, anonymous
+  mainPlatform   String          // instagram, tiktok, twitter, linkedin, youtube
+  niche          String          // ex: "fitness", "tech", "food"
+  goals          String          // JSON array stringifié ["grow_audience", "monetize", ...]
+  postFrequency  String          // daily, few_per_week, weekly, few_per_month, irregular
+  userId         String
+  createdAt      DateTime        @default(now())
+  user           User            @relation(fields: [userId], references: [id])
+  socialProfiles SocialProfile[]
+  contentIdeas   ContentIdea[]
+  savedHooks     SavedHook[]
+}
+
+model ContentIdea {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  title         String
+  hook          String    // opening line / attention grabber
+  format        String    // carousel, reel, single_image, text, story, thread, live
+  caption       String
+  cta           String    // call to action
+  status        String    @default("idea") // idea, draft, ready, published
+  scheduledDate String?   // ISO date string YYYY-MM-DD, null = unscheduled
+  createdAt     DateTime  @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+model SavedHook {
+  id          String    @id @default(cuid())
+  workspaceId String
+  text        String
+  type        String    // curiosity, storytelling, educational, controversial, statistical
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+model SocialProfile {
+  id          String    @id @default(cuid())
+  workspaceId String
+  platform    String    // instagram, tiktok, twitter, linkedin
+  username    String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+model AuditResult {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int
+  details   String // JSON stringifié
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ScoreResult {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int      // 0-100 global
+  details   String   // JSON stringifié (pillar breakdown)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model CreatorScore {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  score       Int      // 0-100 global
+  details     String   // JSON stringifié (factor breakdown)
+  platform    String   // plateforme évaluée
+  username    String   // username évalué
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model MissionCompletion {
+  id          String   @id @default(cuid())
+  workspaceId String
+  missionId   String   // e.g. "mission_2026-03-09_0"
+  date        String   // YYYY-MM-DD
+  xp          Int
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, missionId])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String   // e.g. "user.role.update", "user.delete", "setting.update"
+  target    String?  // e.g. target userId or settingKey
+  details   String?  // JSON stringifié (extra context)
+  createdAt DateTime @default(now())
+  admin     User     @relation(fields: [adminId], references: [id])
+}
+
+model EngineRun {
+  id        String   @id @default(cuid())
+  engine    String   // "creator-score" | "trend-radar"
+  input     String   // JSON stringifié
+  output    String   // JSON stringifié
+  durationMs Int
+  sandbox   Boolean  @default(false) // true if run from admin sandbox
+  createdAt DateTime @default(now())
+}
+
+model BetaRequest {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  status       String    @default("pending") // pending, approved, rejected
+  inviteToken  String?   @unique
+  approvedAt   DateTime?
+  inviteSentAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String   // JSON stringifié
+  updatedAt DateTime @updatedAt
+}
