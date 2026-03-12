@@ -10,10 +10,16 @@ export default async function CreatorScorePage() {
   const workspace = user.workspaces[0];
   if (!workspace) redirect("/onboarding");
 
-  const latestScore = await prisma.creatorScore.findFirst({
-    where: { userId: user.id, workspaceId: workspace.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const [latestScore, igConnection] = await Promise.all([
+    prisma.creatorScore.findFirst({
+      where: { userId: user.id, workspaceId: workspace.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.instagramConnection.findUnique({
+      where: { userId: user.id },
+      select: { igUsername: true },
+    }),
+  ]);
 
   const report = latestScore
     ? JSON.parse(latestScore.details)
@@ -31,6 +37,7 @@ export default async function CreatorScorePage() {
       <CreatorScoreView
         report={report}
         lastUpdated={latestScore?.createdAt.toISOString() ?? null}
+        igUsername={igConnection?.igUsername ?? null}
       />
     </div>
   );

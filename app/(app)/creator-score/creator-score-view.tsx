@@ -29,9 +29,11 @@ function getGradeColor(grade: string) {
 export function CreatorScoreView({
   report,
   lastUpdated,
+  igUsername,
 }: {
   report: CreatorScoreReport | null;
   lastUpdated: string | null;
+  igUsername: string | null;
 }) {
   const [state, formAction, pending] = useActionState<
     CreatorScoreState,
@@ -43,6 +45,16 @@ export function CreatorScoreView({
       {state?.error && (
         <div className="mb-6 rounded-lg bg-danger/15 p-4 text-sm text-danger">
           {state.error}
+        </div>
+      )}
+
+      {/* Data source indicator */}
+      {igUsername && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-purple-500/10 px-3 py-1.5 w-fit">
+          <span className="h-2 w-2 rounded-full bg-purple-500" />
+          <span className="text-xs font-medium text-purple-400">
+            Données Instagram @{igUsername} incluses
+          </span>
         </div>
       )}
 

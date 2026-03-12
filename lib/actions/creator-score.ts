@@ -8,6 +8,7 @@ import {
   type CreatorScoreInput,
 } from "@/modules/creator-score";
 import { revalidatePath } from "next/cache";
+import { getInstagramMetrics } from "@/lib/services/instagram-metrics";
 
 export type CreatorScoreState = { error?: string } | null;
 
@@ -28,8 +29,8 @@ export async function calculateCreatorScore(
   const profile = workspace.socialProfiles[0];
   const username = profile?.username ?? user.email;
 
-  // Gather workspace data
-  const [contentIdeas, savedHooks, latestAudit, latestScore, missions] =
+  // Gather workspace data + Instagram metrics in parallel
+  const [contentIdeas, savedHooks, latestAudit, latestScore, missions, igMetrics] =
     await Promise.all([
       prisma.contentIdea.findMany({
         where: { workspaceId: workspace.id },
@@ -51,6 +52,7 @@ export async function calculateCreatorScore(
         _count: { id: true },
         _sum: { xp: true },
       }),
+      getInstagramMetrics(userId),
     ]);
 
   const input: CreatorScoreInput = {
@@ -67,6 +69,12 @@ export async function calculateCreatorScore(
     latestWinlyScore: latestScore?.score ?? null,
     completedMissions: missions._count.id,
     totalXp: missions._sum.xp ?? 0,
+    // Instagram enrichment (optional)
+    igConnected: igMetrics !== null,
+    igFollowers: igMetrics?.followers,
+    igEngagementRate: igMetrics?.engagementRate,
+    igMediaCount: igMetrics?.mediaCount,
+    igTotalSaved: igMetrics?.totalSaved,
   };
 
   const report = computeCreatorScore(input);

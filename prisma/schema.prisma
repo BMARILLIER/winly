@@ -15,11 +15,13 @@ model User {
   role         String          @default("free") // free, pro, team, admin
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
-  workspaces     Workspace[]
-  audits         AuditResult[]
-  scores         ScoreResult[]
-  creatorScores  CreatorScore[]
-  adminLogs      AdminLog[]
+  workspaces          Workspace[]
+  audits              AuditResult[]
+  scores              ScoreResult[]
+  creatorScores       CreatorScore[]
+  adminLogs           AdminLog[]
+  instagramConnection InstagramConnection?
+  aiInsights          AiInsight[]
 }
 
 model Workspace {
@@ -139,6 +141,68 @@ model BetaRequest {
   inviteSentAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+model InstagramConnection {
+  id                String              @id @default(cuid())
+  userId            String
+  igUserId          String              // Instagram user ID
+  igUsername         String
+  accessToken       String              // chiffré
+  tokenExpiresAt    DateTime?
+  lastSyncAt        DateTime?
+  connectedAt       DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  user              User                @relation(fields: [userId], references: [id])
+  snapshots         InstagramSnapshot[]
+  media             InstagramMedia[]
+
+  @@unique([userId])
+}
+
+model InstagramSnapshot {
+  id              String              @id @default(cuid())
+  connectionId    String
+  followers       Int?
+  follows         Int?
+  mediaCount      Int?
+  reach           Int?                // reach sur les 28 derniers jours si dispo
+  impressions     Int?
+  profileViews    Int?
+  createdAt       DateTime            @default(now())
+  connection      InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+}
+
+model InstagramMedia {
+  id              String              @id @default(cuid())
+  connectionId    String
+  igMediaId       String              // ID Instagram du media
+  mediaType       String              // IMAGE, VIDEO, CAROUSEL_ALBUM
+  caption         String?
+  permalink       String?
+  timestamp       DateTime
+  likeCount       Int                 @default(0)
+  commentsCount   Int                 @default(0)
+  reach           Int?
+  impressions     Int?
+  saved           Int?
+  createdAt       DateTime            @default(now())
+  connection      InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, igMediaId])
+}
+
+model AiInsight {
+  id          String   @id @default(cuid())
+  userId      String
+  category    String   // strategy, timing, audience, growth
+  title       String
+  description String
+  impact      String   // high, medium, low
+  metric      String?  // donnée chiffrée associée (ex: "4.2%", "+12%")
+  source      String   @default("local") // "local" = règles déterministes, "ai" = Claude/LLM
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model SystemSetting {

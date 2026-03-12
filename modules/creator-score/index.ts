@@ -26,6 +26,12 @@ export interface CreatorScoreInput {
   // Missions
   completedMissions: number;
   totalXp: number;
+  // Instagram (optional — enriches scoring when connected)
+  igConnected?: boolean;
+  igFollowers?: number;
+  igEngagementRate?: number; // 0-1 ratio
+  igMediaCount?: number;
+  igTotalSaved?: number;
 }
 
 export interface CreatorScoreReport {
@@ -83,6 +89,15 @@ function scoreEngagement(input: CreatorScoreInput): number {
     score += publishedRatio * 30;
   }
 
+  // Instagram engagement rate bonus (real-world signal)
+  if (input.igEngagementRate != null && input.igEngagementRate > 0) {
+    const rate = input.igEngagementRate * 100; // convert to percentage
+    if (rate >= 5) score += 20;
+    else if (rate >= 3) score += 15;
+    else if (rate >= 1) score += 10;
+    else score += 5;
+  }
+
   return Math.round(Math.min(score, 100));
 }
 
@@ -110,6 +125,13 @@ function scoreGrowth(input: CreatorScoreInput): number {
   if (pipeline >= 5) score += 30;
   else if (pipeline >= 3) score += 20;
   else if (pipeline >= 1) score += 10;
+
+  // Instagram follower milestone bonus
+  if (input.igFollowers != null && input.igFollowers > 0) {
+    if (input.igFollowers >= 10_000) score += 15;
+    else if (input.igFollowers >= 1_000) score += 10;
+    else if (input.igFollowers >= 100) score += 5;
+  }
 
   return Math.round(Math.min(score, 100));
 }
@@ -195,6 +217,9 @@ function scoreProfile(input: CreatorScoreInput): number {
 
   // Has audit = cares about profile quality
   if (input.latestAuditScore !== null) score += 30;
+
+  // Instagram connected = real platform presence
+  if (input.igConnected) score += 10;
 
   return Math.round(Math.min(score, 100));
 }

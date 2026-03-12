@@ -5,16 +5,32 @@ import { ChartContainer, ChartTooltip, chartTheme } from "@/components/shared/ch
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { TrendingUp, CalendarDays, BarChart3, Target, CheckCircle2, AlertTriangle, Lightbulb } from "lucide-react";
 import {
-  followerGrowth,
-  growthRates,
   demographics,
   activityHeatmap,
   dayLabels,
   weakSignals,
 } from "@/lib/mock/growth";
-import { mockGrowthReport } from "@/lib/mock/growth-engine";
+import type { GrowthEngineReport } from "@/modules/growth-engine";
 
-export function GrowthUI() {
+// ─── Types ───
+
+export interface GrowthData {
+  source: "instagram" | "demo";
+  igUsername?: string;
+  lastSyncAt?: string | null;
+  followerGrowth: { date: string; followers: number }[];
+  growthRates: {
+    daily: { value: string; trend: number };
+    weekly: { value: string; trend: number };
+    monthly: { value: string; trend: number };
+    projected: { value: string; trend: number };
+  };
+  growthReport: GrowthEngineReport;
+}
+
+// ─── Component ───
+
+export function GrowthUI({ data }: { data: GrowthData }) {
   return (
     <div className="space-y-8">
       <SectionHeader
@@ -22,21 +38,38 @@ export function GrowthUI() {
         description="Suivez la croissance de vos abonnés et la démographie de votre audience"
       />
 
+      {/* Data source indicator */}
+      {data.source === "instagram" ? (
+        <div className="flex items-center gap-2 rounded-lg bg-purple-500/10 px-3 py-1.5 w-fit">
+          <span className="h-2 w-2 rounded-full bg-purple-500" />
+          <span className="text-xs font-medium text-purple-400">
+            Données Instagram • @{data.igUsername}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-1.5 w-fit">
+          <span className="h-2 w-2 rounded-full bg-text-muted" />
+          <span className="text-xs font-medium text-text-muted">
+            Données de démonstration
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Croissance quotidienne" value={growthRates.daily.value} trend={{ value: growthRates.daily.trend }} icon={TrendingUp} />
-        <StatCard label="Croissance hebdomadaire" value={growthRates.weekly.value} trend={{ value: growthRates.weekly.trend }} icon={CalendarDays} />
-        <StatCard label="Croissance mensuelle" value={growthRates.monthly.value} trend={{ value: growthRates.monthly.trend }} icon={BarChart3} />
-        <StatCard label="Projection (3 mois)" value={growthRates.projected.value} trend={{ value: growthRates.projected.trend }} icon={Target} />
+        <StatCard label="Croissance quotidienne" value={data.growthRates.daily.value} trend={{ value: data.growthRates.daily.trend }} icon={TrendingUp} />
+        <StatCard label="Croissance hebdomadaire" value={data.growthRates.weekly.value} trend={{ value: data.growthRates.weekly.trend }} icon={CalendarDays} />
+        <StatCard label="Croissance mensuelle" value={data.growthRates.monthly.value} trend={{ value: data.growthRates.monthly.trend }} icon={BarChart3} />
+        <StatCard label="Projection (3 mois)" value={data.growthRates.projected.value} trend={{ value: data.growthRates.projected.trend }} icon={Target} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Croissance des abonnés (90 jours)</CardTitle>
+          <CardTitle>Croissance des abonnés ({data.followerGrowth.length} jours)</CardTitle>
         </CardHeader>
         <ChartContainer height={340}>
-          <AreaChart data={followerGrowth}>
+          <AreaChart data={data.followerGrowth}>
             <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} />
-            <XAxis dataKey="date" stroke={chartTheme.axisColor} fontSize={12} tickLine={false} interval={14} />
+            <XAxis dataKey="date" stroke={chartTheme.axisColor} fontSize={12} tickLine={false} interval={Math.max(1, Math.floor(data.followerGrowth.length / 6))} />
             <YAxis stroke={chartTheme.axisColor} fontSize={12} tickLine={false} />
             <ChartTooltip />
             <Area type="monotone" dataKey="followers" stroke={chartTheme.palette[0]} fill={chartTheme.palette[0]} fillOpacity={0.15} strokeWidth={2} />
@@ -118,10 +151,10 @@ export function GrowthUI() {
           <div className="flex items-center justify-between">
             <CardTitle>Diagnostic de croissance</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">{mockGrowthReport.score}</span>
+              <span className="text-2xl font-bold text-foreground">{data.growthReport.score}</span>
               <span className="text-sm text-text-muted">/ 100</span>
-              <Badge variant={mockGrowthReport.score >= 70 ? "success" : mockGrowthReport.score >= 40 ? "warning" : "danger"}>
-                {mockGrowthReport.grade}
+              <Badge variant={data.growthReport.score >= 70 ? "success" : data.growthReport.score >= 40 ? "warning" : "danger"}>
+                {data.growthReport.grade}
               </Badge>
             </div>
           </div>
@@ -133,7 +166,7 @@ export function GrowthUI() {
             <BarChart3 className="h-4 w-4 text-accent" />
             Points forts et freins
           </h4>
-          {mockGrowthReport.factors
+          {data.growthReport.factors
             .sort((a, b) => b.score - a.score)
             .map((factor) => {
               const isStrong = factor.score >= 60;
@@ -170,7 +203,7 @@ export function GrowthUI() {
             <Lightbulb className="h-4 w-4 text-accent" />
             Actions recommandées
           </h4>
-          {mockGrowthReport.recommendations.map((rec) => (
+          {data.growthReport.recommendations.map((rec) => (
             <div key={rec.id} className="rounded-lg border border-border bg-surface-1 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-foreground">{rec.title}</span>

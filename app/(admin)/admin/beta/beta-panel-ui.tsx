@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { approveBetaRequest, rejectBetaRequest, revokeBetaAccess, deleteBetaRequest } from "@/lib/actions/beta";
+import {
+  approveBetaRequest,
+  rejectBetaRequest,
+  revokeBetaAccess,
+  deleteBetaRequest,
+} from "@/lib/actions/beta";
 
 interface BetaRequest {
   id: string;
@@ -43,6 +48,7 @@ const statusLabels: Record<string, string> = {
 export function BetaPanelUI({ requests, stats }: Props) {
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "warning"; text: string } | null>(null);
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
@@ -58,29 +64,59 @@ export function BetaPanelUI({ requests, stats }: Props) {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  async function handleApprove(requestId: string) {
+    const result = await approveBetaRequest(requestId);
+    if (!result) return;
+
+    if (result.emailSent) {
+      setToast({ type: "success", text: `Email d'invitation envoye a ${result.email}` });
+    } else {
+      // Copie auto du lien
+      await navigator.clipboard.writeText(result.inviteLink);
+      setToast({
+        type: "warning",
+        text: `Email non envoye a ${result.email} — le lien a ete copie dans votre presse-papier. Envoyez-le manuellement.`,
+      });
+    }
+    setTimeout(() => setToast(null), 8000);
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Accès bêta</h1>
+        <h1 className="text-2xl font-bold text-foreground">Acces beta</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Gérez la liste d&apos;attente et les approbations de la bêta privée
+          Gerez la liste d&apos;attente et les approbations de la beta privee
         </p>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`rounded-lg px-4 py-3 text-sm ${
+            toast.type === "success"
+              ? "bg-success/10 text-success"
+              : "bg-warning/10 text-warning"
+          }`}
+        >
+          {toast.text}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatBox label="Total demandes" value={stats.total} />
-        <StatBox label="Approuvées" value={stats.approved} color="text-success" />
+        <StatBox label="Approuvees" value={stats.approved} color="text-success" />
         <StatBox label="En attente" value={stats.pending} color="text-warning" />
-        <StatBox label="Refusées" value={stats.rejected} color="text-danger" />
+        <StatBox label="Refusees" value={stats.rejected} color="text-danger" />
         <StatBox label="Places restantes" value={stats.remaining} color={stats.remaining <= 10 ? "text-danger" : "text-accent"} />
       </div>
 
       {/* Capacity bar */}
       <div>
         <div className="flex items-center justify-between text-sm mb-1">
-          <span className="text-text-secondary">Capacité bêta</span>
+          <span className="text-text-secondary">Capacite beta</span>
           <span className="font-medium text-foreground">{stats.approved} / {stats.limit}</span>
         </div>
         <div className="h-2 w-full rounded-full bg-surface-3">
@@ -128,7 +164,7 @@ export function BetaPanelUI({ requests, stats }: Props) {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-text-muted">
-                  Aucune demande trouvée.
+                  Aucune demande trouvee.
                 </td>
               </tr>
             )}
@@ -148,10 +184,10 @@ export function BetaPanelUI({ requests, stats }: Props) {
                       {statusLabels[req.status] ?? req.status}
                     </span>
                     {req.status === "approved" && req.inviteSentAt && (
-                      <span className="text-[10px] text-success">Email envoyé</span>
+                      <span className="text-[10px] text-success">Email envoye</span>
                     )}
                     {req.status === "approved" && !req.inviteSentAt && (
-                      <span className="text-[10px] text-warning">Email non envoyé</span>
+                      <span className="text-[10px] text-warning">Email non envoye</span>
                     )}
                   </div>
                 </td>
@@ -159,16 +195,14 @@ export function BetaPanelUI({ requests, stats }: Props) {
                   <div className="flex items-center justify-end gap-2">
                     {req.status === "pending" && (
                       <>
-                        <form action={approveBetaRequest}>
-                          <input type="hidden" name="requestId" value={req.id} />
-                          <button
-                            type="submit"
-                            disabled={stats.remaining <= 0}
-                            className="rounded-lg bg-success/10 px-3 py-1 text-xs font-medium text-success hover:bg-success/20 transition-colors disabled:opacity-50"
-                          >
-                            Approuver
-                          </button>
-                        </form>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(req.id)}
+                          disabled={stats.remaining <= 0}
+                          className="rounded-lg bg-success/10 px-3 py-1 text-xs font-medium text-success hover:bg-success/20 transition-colors disabled:opacity-50"
+                        >
+                          Approuver
+                        </button>
                         <form action={rejectBetaRequest}>
                           <input type="hidden" name="requestId" value={req.id} />
                           <button
@@ -189,7 +223,7 @@ export function BetaPanelUI({ requests, stats }: Props) {
                             onClick={() => copyInviteLink(req.id, req.inviteToken!)}
                             className="rounded-lg bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
                           >
-                            {copiedId === req.id ? "Copié !" : "Copier le lien"}
+                            {copiedId === req.id ? "Copie !" : "Copier le lien"}
                           </button>
                         )}
                         <form action={revokeBetaAccess}>
@@ -198,7 +232,7 @@ export function BetaPanelUI({ requests, stats }: Props) {
                             type="submit"
                             className="rounded-lg bg-danger/10 px-3 py-1 text-xs font-medium text-danger hover:bg-danger/20 transition-colors"
                           >
-                            Révoquer
+                            Revoquer
                           </button>
                         </form>
                         <DeleteButton requestId={req.id} />
@@ -206,16 +240,14 @@ export function BetaPanelUI({ requests, stats }: Props) {
                     )}
                     {req.status === "rejected" && (
                       <div className="flex items-center gap-2">
-                        <form action={approveBetaRequest}>
-                          <input type="hidden" name="requestId" value={req.id} />
-                          <button
-                            type="submit"
-                            disabled={stats.remaining <= 0}
-                            className="rounded-lg bg-success/10 px-3 py-1 text-xs font-medium text-success hover:bg-success/20 transition-colors disabled:opacity-50"
-                          >
-                            Ré-approuver
-                          </button>
-                        </form>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(req.id)}
+                          disabled={stats.remaining <= 0}
+                          className="rounded-lg bg-success/10 px-3 py-1 text-xs font-medium text-success hover:bg-success/20 transition-colors disabled:opacity-50"
+                        >
+                          Re-approuver
+                        </button>
                         <DeleteButton requestId={req.id} />
                       </div>
                     )}
@@ -235,7 +267,7 @@ function DeleteButton({ requestId }: { requestId: string }) {
     <form
       action={deleteBetaRequest}
       onSubmit={(e) => {
-        if (!confirm("Supprimer définitivement cette demande ?")) {
+        if (!confirm("Supprimer definitivement cette demande ?")) {
           e.preventDefault();
         }
       }}

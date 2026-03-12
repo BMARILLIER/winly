@@ -140,17 +140,20 @@ PS : Si vous ne trouvez pas cet email, pensez à vérifier votre dossier Spam ou
 
 // ─── Admin: Approve ───
 
-export async function approveBetaRequest(formData: FormData) {
+export type ApproveResult = {
+  emailSent: boolean;
+  inviteLink: string;
+  email: string;
+} | null;
+
+export async function approveBetaRequest(requestId: string): Promise<ApproveResult> {
   const admin = await requireAdmin();
-  const parsed = betaRequestIdSchema.safeParse({
-    requestId: formData.get("requestId") ?? "",
-  });
-  if (!parsed.success) return;
-  const { requestId } = parsed.data;
+  const parsed = betaRequestIdSchema.safeParse({ requestId });
+  if (!parsed.success) return null;
 
   // Check limit
   const approvedCount = await prisma.betaRequest.count({ where: { status: "approved" } });
-  if (approvedCount >= BETA_MAX_USERS) return;
+  if (approvedCount >= BETA_MAX_USERS) return null;
 
   const token = generateInviteToken();
   const request = await prisma.betaRequest.update({
@@ -183,6 +186,8 @@ export async function approveBetaRequest(formData: FormData) {
     emailSent,
   });
   revalidatePath("/admin/beta");
+
+  return { emailSent, inviteLink, email: request.email };
 }
 
 // ─── Admin: Reject ───
