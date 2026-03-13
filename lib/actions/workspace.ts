@@ -7,16 +7,16 @@ import { getSession } from "@/lib/auth";
 
 const workspaceSchema = z.object({
   name: z.string().trim().min(1, "Workspace name is required."),
-  profileType: z.enum(["creator", "brand", "agency"], {
-    error: "Please select a profile type.",
+  profileType: z.enum(["personal_brand", "business", "anonymous"], {
+    error: "Veuillez sélectionner un type de profil.",
   }),
   mainPlatform: z.enum(["instagram", "tiktok", "youtube", "linkedin", "twitter"], {
     error: "Please select a platform.",
   }),
   niche: z.string().trim().min(1, "Please enter your niche."),
   goals: z.array(z.string()).min(1, "Please select at least one goal."),
-  postFrequency: z.enum(["daily", "weekly", "biweekly", "monthly"], {
-    error: "Please select a posting frequency.",
+  postFrequency: z.enum(["daily", "few_per_week", "weekly", "few_per_month", "irregular"], {
+    error: "Veuillez sélectionner une fréquence.",
   }),
 });
 
