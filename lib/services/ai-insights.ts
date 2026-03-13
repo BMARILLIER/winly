@@ -466,5 +466,5 @@ function formatTypeLabel(type: string): string {
     VIDEO: "Reels",
     CAROUSEL_ALBUM: "Carrousels",
   };
-  return labels[type] ?? type;
+  return labels[type] || "publications";
 }
