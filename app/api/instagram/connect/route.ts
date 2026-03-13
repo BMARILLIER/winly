@@ -17,7 +17,7 @@ export async function GET() {
   const cookieStore = await cookies();
   cookieStore.set("ig_oauth_state", state, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 60 * 10, // 10 minutes
   });

@@ -15,6 +15,7 @@ import {
   Settings,
   ArrowLeft,
   ShieldCheck,
+  Instagram,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -30,6 +31,7 @@ const adminNavItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin/logs", label: "Journaux", icon: ScrollText },
   { href: "/admin/beta", label: "Bêta", icon: ShieldCheck },
   { href: "/admin/sandbox", label: "Sandbox", icon: FlaskConical },
+  { href: "/admin/instagram", label: "Instagram", icon: Instagram },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 

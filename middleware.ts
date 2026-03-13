@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth";
 import { isProtected, isGuestOnly, getRequiredRole, getHomeRedirect } from "@/lib/routes/route-groups";
+
+// Inline the cookie name to avoid importing the auth barrel (which pulls in Prisma/libsql — incompatible with Edge runtime)
+const SESSION_COOKIE = "winly_session";
 
 function parseSession(raw: string): { userId: string; role: string } {
   const sep = raw.indexOf(":");

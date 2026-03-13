@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import {
   computeCreatorScore,
   type CreatorScoreInput,
 } from "@/modules/creator-score";
 
 export async function POST(request: NextRequest) {
+  const userId = await getSession();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { username, platform } = body as {
     username?: string;
@@ -42,17 +48,17 @@ export async function POST(request: NextRequest) {
   }
 
   const ws = profile.workspace;
-  const userId = ws.user.id;
+  const ownerId = ws.user.id;
 
   // Gather all input data
   const [latestAudit, latestScore, missions] = await Promise.all([
     prisma.auditResult.findFirst({
-      where: { userId },
+      where: { userId: ownerId },
       orderBy: { createdAt: "desc" },
       select: { score: true },
     }),
     prisma.scoreResult.findFirst({
-      where: { userId },
+      where: { userId: ownerId },
       orderBy: { createdAt: "desc" },
       select: { score: true },
     }),
@@ -84,7 +90,7 @@ export async function POST(request: NextRequest) {
   // Store result
   await prisma.creatorScore.create({
     data: {
-      userId,
+      userId: ownerId,
       workspaceId: ws.id,
       score: report.score,
       details: JSON.stringify(report),

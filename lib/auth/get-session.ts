@@ -17,7 +17,7 @@ export async function setSession(userId: string, role: string = "free") {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, `${userId}:${role}`, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });

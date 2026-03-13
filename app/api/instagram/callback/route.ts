@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
 
   // User denied access
   if (error) {
-    return NextResponse.redirect(new URL("/settings?ig=denied", APP_URL));
+    return NextResponse.redirect(new URL("/admin/instagram?ig=denied", APP_URL));
   }
 
   // Missing params
   if (!code || !state) {
-    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
+    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
   }
 
   // Validate CSRF state
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   cookieStore.delete("ig_oauth_state");
 
   if (!storedState || storedState !== state) {
-    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
+    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
   }
 
   // Check auth
@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(new URL("/settings?ig=success", APP_URL));
+    return NextResponse.redirect(new URL("/admin/instagram?ig=success", APP_URL));
   } catch (err) {
     console.error("[instagram/callback] Error:", err);
-    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
+    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
   }
 }

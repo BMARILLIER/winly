@@ -53,8 +53,24 @@ export function BetaPanelUI({ requests, stats }: Props) {
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
   function buildInviteLink(token: string) {
-    const base = typeof window !== "undefined" ? window.location.origin : "";
+    let base = typeof window !== "undefined" ? window.location.origin : "";
+    // Remplacer localhost par l'IP réseau pour que le lien fonctionne sur d'autres appareils
+    if (base.includes("localhost")) {
+      base = base.replace("localhost", window.location.hostname === "localhost"
+        ? getNetworkHint()
+        : window.location.hostname);
+    }
     return `${base}/register?invite=${token}`;
+  }
+
+  function getNetworkHint(): string {
+    // Utilise NEXT_PUBLIC_APP_URL si défini et non-localhost
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (envUrl && !envUrl.includes("localhost")) {
+      return new URL(envUrl).hostname;
+    }
+    // Sinon fallback sur localhost (l'admin devra mettre à jour NEXT_PUBLIC_APP_URL)
+    return "localhost";
   }
 
   function copyInviteLink(id: string, token: string) {

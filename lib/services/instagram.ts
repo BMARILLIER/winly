@@ -5,7 +5,10 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 const CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET ?? "";
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/instagram/callback`;
-const ENCRYPT_KEY = process.env.SESSION_SECRET?.slice(0, 32).padEnd(32, "0") ?? "0".repeat(32);
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+  throw new Error("SESSION_SECRET must be set and at least 32 characters long");
+}
+const ENCRYPT_KEY = process.env.SESSION_SECRET.slice(0, 32);
 
 // ─── Encryption ───
 
