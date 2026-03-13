@@ -34,7 +34,7 @@ export default async function ContentPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main: idea list + create form */}
         <div className="lg:col-span-2 space-y-6">
-          <NewIdeaForm workspaceId={workspace.id} />
+          <NewIdeaForm workspaceId={workspace.id} niche={workspace.niche} platform={workspace.mainPlatform} />
           <ContentList ideas={ideas} />
         </div>
 
