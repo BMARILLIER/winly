@@ -55,6 +55,13 @@ export async function generateHooksWithAI(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "Clé API non configurée." };
 
+  // Check cache first
+  const { getCachedResponse, setCachedResponse } = await import("@/lib/services/ai-cache");
+  const cached = await getCachedResponse<string[]>("hooks", topic || niche, niche, hookType ?? "all");
+  if (cached) {
+    return { ok: true, hooks: cached };
+  }
+
   const typeLabels: Record<string, string> = {
     question: "Question intrigante",
     stat: "Statistique choc",
@@ -108,6 +115,10 @@ Règles :
     // Strip markdown code fences if present
     const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
     const parsed = JSON.parse(cleaned) as { hooks: string[] };
+
+    // Save to cache
+    await setCachedResponse("hooks", topic || niche, niche, parsed.hooks, hookType ?? "all");
+
     return { ok: true, hooks: parsed.hooks };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

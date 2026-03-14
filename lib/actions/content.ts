@@ -152,6 +152,14 @@ export async function generateContentWithAI(
     return { ok: false, error: "Clé API non configurée." };
   }
 
+  // Check cache first
+  const { getCachedResponse, setCachedResponse } = await import("@/lib/services/ai-cache");
+  type ContentResult = { hook: string; caption: string; cta: string };
+  const cached = await getCachedResponse<ContentResult>("content", topic, niche, `${format}:${platform}`);
+  if (cached) {
+    return { ok: true, hook: cached.hook, caption: cached.caption, cta: cached.cta };
+  }
+
   const formatLabels: Record<string, string> = {
     carousel: "Carrousel",
     reel: "Reel / Vidéo courte",
@@ -215,6 +223,9 @@ Structure JSON exacte :
       caption: string;
       cta: string;
     };
+
+    // Save to cache
+    await setCachedResponse("content", topic, niche, parsed, `${format}:${platform}`);
 
     return {
       ok: true,

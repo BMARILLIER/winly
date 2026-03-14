@@ -206,6 +206,14 @@ model AiInsight {
   user        User     @relation(fields: [userId], references: [id])
 }
 
+model AiCache {
+  id        String   @id @default(cuid())
+  promptKey String   @unique // hash du prompt (type + sujet + niche)
+  type      String   // "hooks", "content", "insights"
+  response  String   // JSON stringifié de la réponse
+  createdAt DateTime @default(now())
+}
+
 model SystemSetting {
   key       String   @id
   value     String   // JSON stringifié
