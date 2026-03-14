@@ -108,8 +108,9 @@ Règles :
     const parsed = JSON.parse(text) as { hooks: string[] };
     return { ok: true, hooks: parsed.hooks };
   } catch (err) {
-    console.error("[hooks-ai] Error:", err);
-    return { ok: false, error: "Erreur lors de la génération IA." };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[hooks-ai] Error:", msg);
+    return { ok: false, error: `Erreur IA : ${msg}` };
   }
 }
 
