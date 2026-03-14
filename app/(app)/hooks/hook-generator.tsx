@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { saveHook } from "@/lib/actions/hooks";
+import { useRouter } from "next/navigation";
+import { saveHook, generateHooksWithAI } from "@/lib/actions/hooks";
 import { generateHooks, HOOK_TYPES } from "@/modules/hooks";
+import { Sparkles } from "lucide-react";
 
 interface Props {
   niche: string;
@@ -18,22 +19,46 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
     generateHooks(niche, activeType, 6)
   );
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  const [topic, setTopic] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [isAiMode, setIsAiMode] = useState(false);
 
   function selectType(typeId: string | null) {
     setSelectedType(typeId);
     setHooks(generateHooks(niche, typeId, 6));
     setSavedIds(new Set());
+    setIsAiMode(false);
     const url = typeId ? `/hooks?type=${typeId}` : "/hooks";
     router.replace(url, { scroll: false });
   }
 
   function regenerate() {
-    // Shift the results by changing count to get different hooks
     const all = generateHooks(niche, selectedType, 40);
     const offset = hooks.length + savedIds.size;
     const next = all.slice(offset, offset + 6);
     setHooks(next.length > 0 ? next : all.slice(0, 6));
     setSavedIds(new Set());
+    setIsAiMode(false);
+  }
+
+  async function handleAiGenerate() {
+    setGenerating(true);
+    setAiError("");
+    const result = await generateHooksWithAI(topic, selectedType, niche);
+    setGenerating(false);
+    if (result.ok && result.hooks) {
+      setHooks(
+        result.hooks.map((text) => ({
+          text,
+          type: selectedType ?? "curiosity",
+        }))
+      );
+      setSavedIds(new Set());
+      setIsAiMode(true);
+    } else {
+      setAiError(result.error ?? "Erreur inconnue.");
+    }
   }
 
   function markSaved(index: number) {
@@ -42,6 +67,35 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
 
   return (
     <div>
+      {/* AI Topic input */}
+      <div className="mb-6 space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Sujet (optionnel)
+          </label>
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Ex: mon setup DJ, soirée house, vinyles..."
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+        <button
+          onClick={handleAiGenerate}
+          disabled={generating}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-violet px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+        >
+          <Sparkles className="h-4 w-4" />
+          {generating ? "Génération en cours..." : "Générer des hooks avec l'IA"}
+        </button>
+        {aiError && (
+          <div className="rounded-lg bg-danger/15 p-3 text-sm text-danger">
+            {aiError}
+          </div>
+        )}
+      </div>
+
       {/* Type filter */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
@@ -52,7 +106,7 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
               : "bg-surface-2 text-text-secondary hover:bg-surface-3"
           }`}
         >
-          All types
+          Tous les types
         </button>
         {HOOK_TYPES.map((t) => (
           <button
@@ -76,6 +130,14 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
         </p>
       )}
 
+      {/* AI mode badge */}
+      {isAiMode && (
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-violet/10 px-3 py-1 text-xs font-medium text-violet">
+          <Sparkles className="h-3 w-3" />
+          Généré par l&apos;IA
+        </div>
+      )}
+
       {/* Generated hooks */}
       <div className="space-y-3">
         {hooks.map((hook, i) => {
@@ -84,7 +146,7 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
 
           return (
             <div
-              key={i}
+              key={`${hook.text}-${i}`}
               className="rounded-xl border border-border bg-surface-1 p-5 flex items-start justify-between gap-4 transition-all duration-200 hover:border-border-hover"
             >
               <div className="flex-1 min-w-0">
@@ -100,7 +162,7 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
 
               {isSaved ? (
                 <span className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-success">
-                  Saved
+                  Sauvegardé
                 </span>
               ) : (
                 <form
@@ -116,7 +178,7 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
                     type="submit"
                     className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent-muted transition-colors"
                   >
-                    + Save
+                    + Sauvegarder
                   </button>
                 </form>
               )}
@@ -127,10 +189,11 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
 
       {/* Regenerate */}
       <button
-        onClick={regenerate}
-        className="mt-6 w-full rounded-lg border-2 border-dashed border-border py-3 text-sm font-medium text-text-secondary hover:border-accent/50 hover:text-accent transition-colors"
+        onClick={isAiMode ? handleAiGenerate : regenerate}
+        disabled={generating}
+        className="mt-6 w-full rounded-lg border-2 border-dashed border-border py-3 text-sm font-medium text-text-secondary hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-50"
       >
-        Generate more hooks
+        {generating ? "Génération..." : "Générer plus de hooks"}
       </button>
     </div>
   );

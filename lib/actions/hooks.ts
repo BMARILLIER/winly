@@ -44,6 +44,75 @@ export async function saveHook(formData: FormData): Promise<void> {
   revalidatePath("/hooks");
 }
 
+export async function generateHooksWithAI(
+  topic: string,
+  hookType: string | null,
+  niche: string
+): Promise<{ ok: boolean; hooks?: string[]; error?: string }> {
+  const userId = await getSession();
+  if (!userId) return { ok: false, error: "Non connecté." };
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { ok: false, error: "Clé API non configurée." };
+
+  const typeLabels: Record<string, string> = {
+    question: "Question intrigante",
+    stat: "Statistique choc",
+    story: "Début d'histoire",
+    bold: "Affirmation audacieuse",
+    curiosity: "Curiosité / mystère",
+  };
+  const typeInstruction = hookType
+    ? `Style de hook demandé : ${typeLabels[hookType] ?? hookType}.`
+    : "Mélange différents styles (question, statistique, histoire, affirmation audacieuse, curiosité).";
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        system: `Tu es un expert en copywriting pour les réseaux sociaux. Tu crées des hooks (phrases d'accroche) percutants en français.
+
+Règles :
+- Chaque hook fait 1 à 2 phrases maximum
+- Le hook doit donner envie de lire/regarder la suite
+- Adapté à la niche : ${niche}
+- ${typeInstruction}
+- Ton : direct, authentique, engageant
+- Pas de hashtags, pas d'emojis
+- Réponds UNIQUEMENT en JSON valide : { "hooks": ["hook1", "hook2", ...] }
+- Génère exactement 6 hooks différents`,
+        messages: [
+          {
+            role: "user",
+            content: topic.trim()
+              ? `Génère 6 hooks sur le sujet : "${topic}"`
+              : `Génère 6 hooks variés pour un créateur dans la niche "${niche}"`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+
+    const body = await res.json();
+    const text = body.content?.[0]?.text;
+    if (!text) throw new Error("Réponse vide");
+
+    const parsed = JSON.parse(text) as { hooks: string[] };
+    return { ok: true, hooks: parsed.hooks };
+  } catch (err) {
+    console.error("[hooks-ai] Error:", err);
+    return { ok: false, error: "Erreur lors de la génération IA." };
+  }
+}
+
 export async function deleteHook(formData: FormData): Promise<void> {
   const userId = await getSession();
   if (!userId) redirect("/login");
