@@ -209,7 +209,8 @@ Structure JSON exacte :
     const text = body.content?.[0]?.text;
     if (!text) throw new Error("Réponse vide");
 
-    const parsed = JSON.parse(text) as {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as {
       hook: string;
       caption: string;
       cta: string;

@@ -105,7 +105,9 @@ Règles :
     const text = body.content?.[0]?.text;
     if (!text) throw new Error("Réponse vide");
 
-    const parsed = JSON.parse(text) as { hooks: string[] };
+    // Strip markdown code fences if present
+    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as { hooks: string[] };
     return { ok: true, hooks: parsed.hooks };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
