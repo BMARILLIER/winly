@@ -6,13 +6,45 @@
  */
 
 import { prisma } from "@/lib/db";
-import { decryptToken } from "./instagram";
+import { decryptToken, encryptToken, refreshLongLivedToken } from "./instagram";
 import {
   fetchProfile,
   fetchRecentMedia,
   fetchMediaInsights,
   fetchAccountInsights,
 } from "./instagram-client";
+
+const REFRESH_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+/**
+ * Rafraîchit le token long-lived s'il expire dans moins de 7 jours.
+ * Idempotent — ne fait rien si le token est encore frais.
+ */
+async function maybeRefreshToken(
+  connectionId: string,
+  currentToken: string,
+  expiresAt: Date | null,
+): Promise<string> {
+  if (!expiresAt) return currentToken;
+  const msUntilExpiry = expiresAt.getTime() - Date.now();
+  if (msUntilExpiry > REFRESH_THRESHOLD_MS) return currentToken;
+
+  try {
+    const refreshed = await refreshLongLivedToken(currentToken);
+    const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+    await prisma.instagramConnection.update({
+      where: { id: connectionId },
+      data: {
+        accessToken: encryptToken(refreshed.access_token),
+        tokenExpiresAt: newExpiresAt,
+      },
+    });
+    return refreshed.access_token;
+  } catch (err) {
+    console.error("[instagram-sync] Token refresh failed:", err);
+    return currentToken;
+  }
+}
 
 export interface SyncResult {
   ok: boolean;
@@ -39,6 +71,9 @@ export async function syncInstagramData(userId: string): Promise<SyncResult> {
   } catch {
     return { ok: false, error: "Token invalide. Reconnectez Instagram." };
   }
+
+  // 2bis. Refresh si expire dans < 7 jours
+  token = await maybeRefreshToken(connection.id, token, connection.tokenExpiresAt);
 
   // 3. Fetch profile
   const profile = await fetchProfile(token);

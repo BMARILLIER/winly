@@ -123,6 +123,33 @@ export async function getLongLivedToken(shortToken: string): Promise<{
   return res.json();
 }
 
+// ─── Refresh Long-Lived Token ───
+
+/**
+ * Refresh an existing long-lived token before it expires.
+ * Instagram long-lived tokens last 60 days and can be refreshed any time
+ * (the refresh resets the 60-day window).
+ * https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/business-login#refresh-a-long-lived-token
+ */
+export async function refreshLongLivedToken(longToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+}> {
+  const params = new URLSearchParams({
+    grant_type: "ig_refresh_token",
+    access_token: longToken,
+  });
+
+  const res = await fetch(`https://graph.instagram.com/refresh_access_token?${params}`);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Instagram token refresh failed: ${text}`);
+  }
+
+  return res.json();
+}
+
 // ─── Profile Info ───
 
 export async function getInstagramProfile(accessToken: string): Promise<{

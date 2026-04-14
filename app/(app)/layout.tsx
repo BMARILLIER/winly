@@ -2,9 +2,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { AIAssistant } from "@/components/ui/ai-assistant";
 import { HelpSystem } from "@/components/help/HelpSystem";
 import { ProgressBadge } from "@/components/layout/ProgressBadge";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { getCurrentUser } from "@/lib/auth";
 import { logout } from "@/lib/actions/auth";
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 
 export default async function AppLayout({
   children,
@@ -36,9 +37,7 @@ export default async function AppLayout({
               <Search className="h-4 w-4" />
             </button>
             {user && <ProgressBadge userId={user.id} />}
-            <button className="rounded-lg p-2 text-text-secondary hover:bg-surface-2 hover:text-foreground transition-colors">
-              <Bell className="h-4 w-4" />
-            </button>
+            {user && <NotificationBell userId={user.id} />}
             <HelpSystem />
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-violet flex items-center justify-center text-xs font-bold text-white">

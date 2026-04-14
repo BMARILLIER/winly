@@ -69,6 +69,46 @@ C'est parti : ${APP_URL}/dashboard
   });
 }
 
+export async function sendWeeklyDigestEmail(
+  to: string,
+  name: string | null,
+  stats: {
+    totalXp: number;
+    level: number;
+    streakDays: number;
+    newFollowers: number | null;
+    contentCreated: number;
+    alertsCount: number;
+  },
+) {
+  const displayName = name?.trim() || "créateur";
+  const lines = [
+    `Salut ${displayName},`,
+    "",
+    "Voici ton récap Winly de la semaine :",
+    "",
+    `• Niveau actuel : ${stats.level} (${stats.totalXp} XP total)`,
+    `• Streak en cours : ${stats.streakDays} jour${stats.streakDays > 1 ? "s" : ""}`,
+    stats.newFollowers !== null
+      ? `• Nouveaux followers : ${stats.newFollowers >= 0 ? "+" : ""}${stats.newFollowers}`
+      : "• Instagram : non connecté — branche-le pour tracker ta croissance",
+    `• Idées de contenu créées : ${stats.contentCreated}`,
+    stats.alertsCount > 0
+      ? `• ${stats.alertsCount} alerte${stats.alertsCount > 1 ? "s" : ""} à checker cette semaine`
+      : "• Aucune alerte — tout est au vert",
+    "",
+    `Continue dans l'app : ${APP_URL}/dashboard`,
+    "",
+    "— L'équipe Winly",
+  ];
+
+  return sendEmail({
+    to,
+    subject: `Ton récap Winly — niveau ${stats.level}, streak ${stats.streakDays}j`,
+    text: lines.join("\n"),
+  });
+}
+
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   return sendEmail({
     to,
