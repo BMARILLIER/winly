@@ -97,9 +97,12 @@ Structure JSON exacte :
         messages: [
           {
             role: "user",
-            content: `Génère 3 bios optimisées pour ce profil ${platform} dans la niche "${niche}".`,
+            content: forceFresh
+              ? `Génère 3 NOUVELLES bios optimisées pour ce profil ${platform} dans la niche "${niche}". IMPORTANT : propose des angles totalement différents de ce que tu aurais généré avant — change le ton, la structure, les emojis, les CTA. Variation aléatoire ID : ${Math.random().toString(36).slice(2)}`
+              : `Génère 3 bios optimisées pour ce profil ${platform} dans la niche "${niche}".`,
           },
         ],
+        temperature: forceFresh ? 1 : 0.7,
       }),
     });
 
