@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getInstagramMetrics } from "@/lib/services/instagram-metrics";
 import { getDefaultCreatorProfile, type CreatorProfile } from "@/modules/deal-analyzer";
 import { DealAnalyzerPageUI } from "./deal-analyzer-page-ui";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function DealAnalyzerPage() {
   const user = await getCurrentUser();
@@ -22,12 +23,17 @@ export default async function DealAnalyzerPage() {
     : getDefaultCreatorProfile(workspace.niche);
 
   return (
-    <DealAnalyzerPageUI
-      creatorProfile={creatorProfile}
-      hasInstagram={!!igMetrics}
-      followers={igMetrics?.followers ?? null}
-      engagementRate={igMetrics?.engagementRate ?? null}
-      niche={workspace.niche}
-    />
+    <>
+      {!igMetrics && (
+        <DemoBanner feature="Le Deal Analyzer (sans Instagram connecté)" />
+      )}
+      <DealAnalyzerPageUI
+        creatorProfile={creatorProfile}
+        hasInstagram={!!igMetrics}
+        followers={igMetrics?.followers ?? null}
+        engagementRate={igMetrics?.engagementRate ?? null}
+        niche={workspace.niche}
+      />
+    </>
   );
 }

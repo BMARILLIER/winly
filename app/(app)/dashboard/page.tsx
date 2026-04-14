@@ -12,6 +12,7 @@ import {
 import { detectAlerts, getDefaultAlerts } from "@/modules/alerts";
 import { getDefaultCreatorProfile, type CreatorProfile } from "@/modules/deal-analyzer";
 import { CommandCenterUI } from "./command-center-ui";
+import { FirstWinCard } from "@/components/onboarding/FirstWinCard";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -94,20 +95,23 @@ export default async function DashboardPage() {
     : getDefaultCreatorProfile(workspace.niche);
 
   return (
-    <CommandCenterUI
-      workspaceId={workspace.id}
-      workspaceName={workspace.name}
-      platform={platformLabel}
-      niche={workspace.niche}
-      bestContent={bestContent}
-      igUsername={igConnection?.igUsername ?? null}
-      igLastSync={igConnection?.lastSyncAt?.toISOString() ?? null}
-      contentCount={contentCount}
-      revenueReport={revenueReport}
-      recommendations={recommendations}
-      alerts={alerts}
-      hasInstagram={!!igMetrics}
-      creatorProfile={creatorProfile}
-    />
+    <>
+      <FirstWinCard userId={user.id} workspaceId={workspace.id} />
+      <CommandCenterUI
+        workspaceId={workspace.id}
+        workspaceName={workspace.name}
+        platform={platformLabel}
+        niche={workspace.niche}
+        bestContent={bestContent}
+        igUsername={igConnection?.igUsername ?? null}
+        igLastSync={igConnection?.lastSyncAt?.toISOString() ?? null}
+        contentCount={contentCount}
+        revenueReport={revenueReport}
+        recommendations={recommendations}
+        alerts={alerts}
+        hasInstagram={!!igMetrics}
+        creatorProfile={creatorProfile}
+      />
+    </>
   );
 }

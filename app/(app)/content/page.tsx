@@ -6,6 +6,7 @@ import { ContentList } from "./content-list";
 import { NewIdeaForm } from "./new-idea-form";
 import { ImportPostForm } from "./import-post-form";
 import { Suggestions } from "./suggestions";
+import { QuotaBadge } from "@/components/ui/quota-badge";
 
 export default async function ContentPage() {
   const user = await getCurrentUser();
@@ -41,7 +42,8 @@ export default async function ContentPage() {
         </div>
 
         {/* Sidebar: suggestions */}
-        <div>
+        <div className="space-y-4">
+          <QuotaBadge userId={user.id} />
           <Suggestions
             suggestions={suggestions}
             workspaceId={workspace.id}

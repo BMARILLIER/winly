@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getInstagramMetrics } from "@/lib/services/instagram-metrics";
 import { computeRevenue, estimateRevenue } from "@/modules/revenue";
 import { RevenuePageUI } from "./revenue-page-ui";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function RevenuePage() {
   const user = await getCurrentUser();
@@ -26,12 +27,15 @@ export default async function RevenuePage() {
     : estimateRevenue(workspace.niche);
 
   return (
-    <RevenuePageUI
-      report={report}
-      hasInstagram={!!igMetrics}
-      niche={workspace.niche}
-      followers={igMetrics?.followers ?? null}
-      engagementRate={igMetrics?.engagementRate ?? null}
-    />
+    <>
+      {!igMetrics && <DemoBanner feature="L'estimation de revenus (sans Instagram connecté)" />}
+      <RevenuePageUI
+        report={report}
+        hasInstagram={!!igMetrics}
+        niche={workspace.niche}
+        followers={igMetrics?.followers ?? null}
+        engagementRate={igMetrics?.engagementRate ?? null}
+      />
+    </>
   );
 }
