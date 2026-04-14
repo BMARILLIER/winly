@@ -10,6 +10,7 @@ import { analyzeBio, generateBios, type BioAnalysis } from "@/modules/bio";
 const analyzeBioSchema = z.object({
   bio: z.string().trim().min(1, "Please enter your current bio."),
   workspaceId: z.string().min(1, "Workspace is required."),
+  regenerate: z.string().optional(),
 });
 
 export interface BioState {
@@ -26,15 +27,20 @@ async function generateBiosWithAI(
   niche: string,
   platform: string,
   profileType: string,
-  goals: string[]
+  goals: string[],
+  forceFresh: boolean = false
 ): Promise<BioSuggestion[] | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
 
-  // Check cache
-  const cacheKey = `${bio}:${platform}:${profileType}`;
-  const cached = await getCachedResponse<BioSuggestion[]>("bio", cacheKey, niche);
-  if (cached) return cached;
+  // Seed unique à chaque régénération pour bypass cache + forcer variation
+  const seed = forceFresh ? `:${Date.now()}:${Math.random().toString(36).slice(2, 8)}` : "";
+  const cacheKey = `${bio}:${platform}:${profileType}${seed}`;
+
+  if (!forceFresh) {
+    const cached = await getCachedResponse<BioSuggestion[]>("bio", cacheKey, niche);
+    if (cached) return cached;
+  }
 
   const profileLabels: Record<string, string> = {
     personal_brand: "marque personnelle (créateur individuel)",
@@ -132,12 +138,22 @@ export async function analyzeBioAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  const { bio, workspaceId } = parsed.data;
+  const { bio, workspaceId, regenerate } = parsed.data;
+  const forceFresh = regenerate === "1";
 
   const workspace = await prisma.workspace.findFirst({
     where: { id: workspaceId, userId },
   });
   if (!workspace) return { error: "Workspace not found." };
+
+  // Quota : une régénération compte comme une génération IA
+  if (forceFresh) {
+    const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+    const quota = await checkAndConsumeGeneration(userId);
+    if (!quota.ok) {
+      return { error: quota.error };
+    }
+  }
 
   const goals: string[] = JSON.parse(workspace.goals);
   const analysis = analyzeBio(bio, workspace.niche);
@@ -148,7 +164,8 @@ export async function analyzeBioAction(
     workspace.niche,
     workspace.mainPlatform,
     workspace.profileType,
-    goals
+    goals,
+    forceFresh
   );
 
   const suggestions = aiSuggestions ?? generateBios({

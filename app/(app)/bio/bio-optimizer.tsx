@@ -139,9 +139,23 @@ export function BioOptimizer({ workspaceId, profileType }: Props) {
           {/* Generated bios */}
           {state.suggestions && state.suggestions.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">
-                3 improved bios
-              </h3>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                  3 improved bios
+                </h3>
+                <form action={action}>
+                  <input type="hidden" name="workspaceId" value={workspaceId} />
+                  <input type="hidden" name="bio" value={state.analysis.bio} />
+                  <input type="hidden" name="regenerate" value="1" />
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className="rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent/50 hover:bg-surface-3 transition-colors disabled:opacity-50"
+                  >
+                    {pending ? "Génération…" : "🔄 Régénérer (1 crédit)"}
+                  </button>
+                </form>
+              </div>
               <div className="space-y-4">
                 {state.suggestions.map((s, i) => (
                   <div key={i} className="rounded-xl border border-border bg-surface-1 p-5 transition-all duration-200 hover:border-border-hover">
