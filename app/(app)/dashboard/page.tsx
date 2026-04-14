@@ -13,6 +13,7 @@ import { detectAlerts, getDefaultAlerts } from "@/modules/alerts";
 import { getDefaultCreatorProfile, type CreatorProfile } from "@/modules/deal-analyzer";
 import { CommandCenterUI } from "./command-center-ui";
 import { FirstWinCard } from "@/components/onboarding/FirstWinCard";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -96,6 +97,9 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {!igMetrics && (
+        <DemoBanner feature="Le dashboard (chiffres d'exemple basés sur ta niche tant qu'Instagram n'est pas connecté)" />
+      )}
       <FirstWinCard userId={user.id} workspaceId={workspace.id} />
       <CommandCenterUI
         workspaceId={workspace.id}

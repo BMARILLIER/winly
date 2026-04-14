@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { InsightsUI, type InsightsPageData } from "./insights-ui";
 import { insights as mockInsights, insightSummary as mockSummary } from "@/lib/mock/ai-insights";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function AIInsightsPage() {
   const user = await getCurrentUser();
@@ -48,5 +49,12 @@ export default async function AIInsightsPage() {
     };
   }
 
-  return <InsightsUI data={data} />;
+  return (
+    <>
+      {dbInsights.length === 0 && (
+        <DemoBanner feature="Les insights IA (exemples — connecte Instagram pour des analyses personnalisées)" />
+      )}
+      <InsightsUI data={data} />
+    </>
+  );
 }

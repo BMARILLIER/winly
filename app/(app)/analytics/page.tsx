@@ -7,6 +7,7 @@ import {
   contentPerformance as mockContentPerformance,
   analyticsKPIs as mockAnalyticsKPIs,
 } from "@/lib/mock/analytics";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 const TYPE_LABELS: Record<string, string> = {
   IMAGE: "Images",
@@ -57,5 +58,10 @@ export default async function AnalyticsPage() {
     };
   }
 
-  return <AnalyticsUI data={data} />;
+  return (
+    <>
+      {!igMetrics && <DemoBanner feature="Les analytics (sans Instagram connecté)" />}
+      <AnalyticsUI data={data} />
+    </>
+  );
 }

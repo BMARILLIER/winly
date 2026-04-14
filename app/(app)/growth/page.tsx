@@ -8,6 +8,7 @@ import {
   growthRates as mockGrowthRates,
 } from "@/lib/mock/growth";
 import { mockGrowthReport } from "@/lib/mock/growth-engine";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function GrowthPage() {
   const user = await getCurrentUser();
@@ -60,5 +61,12 @@ export default async function GrowthPage() {
     };
   }
 
-  return <GrowthUI data={data} />;
+  const showDemoBanner = !igMetrics || igMetrics.followerHistory.length === 0;
+
+  return (
+    <>
+      {showDemoBanner && <DemoBanner feature="La courbe de croissance (sans Instagram connecté)" />}
+      <GrowthUI data={data} />
+    </>
+  );
 }
