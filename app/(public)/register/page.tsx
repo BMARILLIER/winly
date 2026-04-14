@@ -58,13 +58,6 @@ export default function RegisterPage() {
             Lancez votre aventure social media.
           </p>
 
-          <div className="mt-4 rounded-lg bg-accent/10 px-4 py-2.5 text-sm text-accent">
-            Winly est en bêta privée.{" "}
-            <Link href="/beta" className="font-medium underline">
-              Rejoindre la liste d&apos;attente →
-            </Link>
-          </div>
-
           {state?.error && (
             <p className="mt-4 rounded-lg bg-danger/15 px-4 py-2 text-sm text-danger">
               {state.error}

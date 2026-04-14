@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 import { hash, compare } from "bcryptjs";
 import { redirect } from "next/navigation";
@@ -8,6 +9,10 @@ import { setSession, clearSession } from "@/lib/auth";
 import { FEATURES } from "@/lib/config";
 import { isBetaApproved } from "./beta";
 import { loginLimiter, registerLimiter, getClientIp } from "@/lib/rate-limit";
+import {
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+} from "@/lib/services/email";
 
 // ── Password policy ──
 
@@ -82,8 +87,107 @@ export async function register(
     data: { email, passwordHash, name: name || null },
   });
 
+  // Fire-and-forget welcome email (ne bloque pas l'inscription si SMTP down)
+  sendWelcomeEmail(user.email, user.name).catch((err) =>
+    console.error("[auth] welcome email failed:", err),
+  );
+
   await setSession(user.id, user.role);
   redirect("/onboarding");
+}
+
+// ── Password reset ──
+
+const requestResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Adresse email invalide."),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(20, "Token invalide."),
+  password: passwordSchema,
+});
+
+export type ResetState = { error?: string; success?: boolean } | null;
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function requestPasswordReset(
+  _prev: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
+  const ip = await getClientIp();
+  const rl = registerLimiter.check(ip);
+  if (!rl.success) {
+    return { error: "Trop de tentatives. Réessayez plus tard." };
+  }
+
+  const parsed = requestResetSchema.safeParse({
+    email: formData.get("email") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { email } = parsed.data;
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  // Réponse constante pour ne pas révéler si l'email existe
+  if (user) {
+    const token = randomBytes(32).toString("hex");
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+    await prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const resetUrl = `${appUrl}/reset-password?token=${token}`;
+    await sendPasswordResetEmail(user.email, resetUrl).catch((err) =>
+      console.error("[auth] reset email failed:", err),
+    );
+  }
+
+  return { success: true };
+}
+
+export async function resetPassword(
+  _prev: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
+  const parsed = resetPasswordSchema.safeParse({
+    token: formData.get("token") ?? "",
+    password: formData.get("password") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { token, password } = parsed.data;
+  const tokenHash = hashToken(token);
+
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+  });
+  if (!record || record.usedAt || record.expiresAt < new Date()) {
+    return { error: "Lien invalide ou expiré." };
+  }
+
+  const passwordHash = await hash(password, 12);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: record.userId },
+      data: { passwordHash },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() },
+    }),
+  ]);
+
+  return { success: true };
 }
 
 // ── Login ──

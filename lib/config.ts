@@ -15,7 +15,7 @@ export const FEATURES = {
   /** Enable marketplace transactions (currently UI-only) */
   MARKETPLACE_ENABLED: false,
   /** Enable private beta gating on registration */
-  BETA_ENABLED: true,
+  BETA_ENABLED: false,
 } as const;
 
 // ─── Beta Limits ───

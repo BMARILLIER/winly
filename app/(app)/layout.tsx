@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AIAssistant } from "@/components/ui/ai-assistant";
 import { HelpSystem } from "@/components/help/HelpSystem";
+import { ProgressBadge } from "@/components/layout/ProgressBadge";
 import { getCurrentUser } from "@/lib/auth";
 import { logout } from "@/lib/actions/auth";
 import { Search, Bell } from "lucide-react";
@@ -34,6 +35,7 @@ export default async function AppLayout({
             <button className="rounded-lg p-2 text-text-secondary hover:bg-surface-2 hover:text-foreground transition-colors sm:hidden">
               <Search className="h-4 w-4" />
             </button>
+            {user && <ProgressBadge userId={user.id} />}
             <button className="rounded-lg p-2 text-text-secondary hover:bg-surface-2 hover:text-foreground transition-colors">
               <Bell className="h-4 w-4" />
             </button>

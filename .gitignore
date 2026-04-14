@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 certificates
+
+# local database (never commit — contains real user data)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal

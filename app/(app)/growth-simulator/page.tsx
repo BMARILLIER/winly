@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { GrowthSimulatorUI } from "./growth-simulator-ui";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default async function GrowthSimulatorPage() {
   const user = await getCurrentUser();
@@ -14,6 +15,7 @@ export default async function GrowthSimulatorPage() {
           Simulez votre potentiel de croissance et testez des scénarios &laquo; et si &raquo;.
         </p>
       </div>
+      <DemoBanner feature="Le simulateur de croissance" />
       <GrowthSimulatorUI />
     </div>
   );

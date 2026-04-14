@@ -1,5 +1,11 @@
 import { CompetitorsUI } from "./competitors-ui";
+import { DemoBanner } from "@/components/ui/demo-banner";
 
 export default function CompetitorsPage() {
-  return <CompetitorsUI />;
+  return (
+    <>
+      <DemoBanner feature="L'analyse concurrentielle" />
+      <CompetitorsUI />
+    </>
+  );
 }
