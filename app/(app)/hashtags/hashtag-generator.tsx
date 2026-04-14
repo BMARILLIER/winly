@@ -8,6 +8,8 @@ import {
   type HashtagExtendedResult,
 } from "@/modules/hashtags";
 import { PLATFORMS } from "@/lib/workspace-constants";
+import { generateHashtagsWithAI } from "@/lib/actions/hashtags";
+import { Sparkles } from "lucide-react";
 
 interface Props {
   niche: string;
@@ -62,6 +64,9 @@ export function HashtagGenerator({ niche, platform: defaultPlatform }: Props) {
   const [customSelection, setCustomSelection] = useState<Set<string>>(new Set());
   const [copyLabel, setCopyLabel] = useState("Copier tout");
   const [copySelLabel, setCopySelLabel] = useState("Copier la sélection");
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [isAiMode, setIsAiMode] = useState(false);
 
   const handleGenerate = useCallback(() => {
     if (!topic.trim()) return;
@@ -79,6 +84,47 @@ export function HashtagGenerator({ niche, platform: defaultPlatform }: Props) {
     },
     [handleGenerate]
   );
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!topic.trim()) return;
+    setGenerating(true);
+    setAiError("");
+    const res = await generateHashtagsWithAI(topic.trim(), platform, niche);
+    setGenerating(false);
+    if (res.ok && res.hashtags) {
+      // Convert AI results to HashtagResult format
+      const toResults = (tags: string[], cat: "large" | "medium" | "niche"): HashtagResult[] =>
+        tags.map((tag, i) => ({
+          hashtag: tag.startsWith("#") ? tag : `#${tag}`,
+          category: cat,
+          estimatedPosts: cat === "large" ? "1M+" : cat === "medium" ? "100K+" : "10K+",
+          relevanceScore: 90 - i * 5,
+        }));
+
+      const allLarge = toResults(res.hashtags.large, "large");
+      const allMedium = toResults(res.hashtags.medium, "medium");
+      const allNiche = toResults(res.hashtags.niche, "niche");
+      const optimal = [...allLarge.slice(0, 2), ...allMedium.slice(0, 5), ...allNiche.slice(0, 5)];
+
+      const aiResult: HashtagExtendedResult = {
+        topic: topic.trim(),
+        platform,
+        niche,
+        optimal,
+        optimalCopyText: optimal.map((h) => h.hashtag).join(" "),
+        all: { large: allLarge, medium: allMedium, niche: allNiche },
+        totalCount: allLarge.length + allMedium.length + allNiche.length,
+      };
+
+      setResult(aiResult);
+      setCustomSelection(new Set(optimal.map((h) => h.hashtag)));
+      setIsAiMode(true);
+      setCopyLabel("Copier tout");
+      setCopySelLabel("Copier la sélection");
+    } else {
+      setAiError(res.error ?? "Erreur inconnue.");
+    }
+  }, [topic, platform, niche]);
 
   const toggleHashtag = useCallback((tag: string) => {
     setCustomSelection((prev) => {
@@ -162,20 +208,43 @@ export function HashtagGenerator({ niche, platform: defaultPlatform }: Props) {
           </div>
         </div>
 
-        {/* Generate button */}
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={!topic.trim()}
-          className="mt-5 w-full rounded-lg bg-gradient-to-r from-primary to-violet px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          Générer les hashtags
-        </button>
+        {/* Generate buttons */}
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!topic.trim()}
+            className="flex-1 rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm font-semibold text-foreground transition-all duration-200 hover:bg-surface-3 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Générer (local)
+          </button>
+          <button
+            type="button"
+            onClick={handleAiGenerate}
+            disabled={!topic.trim() || generating}
+            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-violet px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <Sparkles className="h-4 w-4" />
+            {generating ? "Génération..." : "Générer avec l'IA"}
+          </button>
+        </div>
+        {aiError && (
+          <div className="mt-3 rounded-lg bg-danger/15 p-3 text-sm text-danger">
+            {aiError}
+          </div>
+        )}
       </div>
 
       {/* Results */}
       {result && (
         <div className="space-y-6 animate-fade-in">
+          {isAiMode && (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-violet/10 px-3 py-1 text-xs font-medium text-violet">
+              <Sparkles className="h-3 w-3" />
+              Hashtags générés par l&apos;IA
+            </div>
+          )}
+
           {/* Optimal set */}
           <div className="rounded-xl border border-border bg-surface-1 p-6">
             <div className="flex items-center justify-between mb-4">

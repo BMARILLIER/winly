@@ -152,6 +152,13 @@ export async function generateContentWithAI(
     return { ok: false, error: "Clé API non configurée." };
   }
 
+  // Quota check — enforce plan limits before any AI call
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) {
+    return { ok: false, error: quota.error };
+  }
+
   // Check cache first
   const { getCachedResponse, setCachedResponse } = await import("@/lib/services/ai-cache");
   type ContentResult = { hook: string; caption: string; cta: string };
@@ -263,6 +270,8 @@ export async function saveGeneratedIdea(
   });
   if (!workspace) return;
 
+  const status = (formData.get("status") as string) || "idea";
+
   await prisma.contentIdea.create({
     data: {
       workspaceId,
@@ -271,6 +280,7 @@ export async function saveGeneratedIdea(
       format,
       caption,
       cta,
+      status,
     },
   });
 

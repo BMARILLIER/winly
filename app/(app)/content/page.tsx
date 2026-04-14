@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { generateIdeas, FORMATS, STATUSES } from "@/modules/content";
 import { ContentList } from "./content-list";
 import { NewIdeaForm } from "./new-idea-form";
+import { ImportPostForm } from "./import-post-form";
 import { Suggestions } from "./suggestions";
 
 export default async function ContentPage() {
@@ -35,6 +36,7 @@ export default async function ContentPage() {
         {/* Main: idea list + create form */}
         <div className="lg:col-span-2 space-y-6">
           <NewIdeaForm workspaceId={workspace.id} niche={workspace.niche} platform={workspace.mainPlatform} />
+          <ImportPostForm workspaceId={workspace.id} />
           <ContentList ideas={ideas} />
         </div>
 

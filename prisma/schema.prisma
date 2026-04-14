@@ -9,13 +9,17 @@ generator client {
 }
 
 model User {
-  id           String          @id @default(cuid())
-  email        String          @unique
-  name         String?
-  passwordHash String
-  role         String          @default("free") // free, pro, team, admin
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  email             String          @unique
+  name              String?
+  passwordHash      String
+  role              String          @default("free") // free, pro, team, admin
+  plan              String          @default("free") // free, pro
+  stripeCustomerId  String?
+  generationsUsed   Int             @default(0)
+  generationsReset  DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   workspaces          Workspace[]
   audits              AuditResult[]
   scores              ScoreResult[]
@@ -23,6 +27,7 @@ model User {
   adminLogs           AdminLog[]
   instagramConnection InstagramConnection?
   aiInsights          AiInsight[]
+  personas            Persona[]
 }
 
 model Workspace {
@@ -212,6 +217,89 @@ model AiCache {
   type      String   // "hooks", "content", "insights"
   response  String   // JSON stringifié de la réponse
   createdAt DateTime @default(now())
+}
+
+model CreatorIdentity {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  // Qui je suis
+  bio         String?  // courte description personnelle
+  tone        String?  // ton de communication : fun, pro, inspirant, provocateur...
+  values      String?  // valeurs clés (authenticité, partage, excellence...)
+  story       String?  // parcours, histoire personnelle
+  // Ce que je fais
+  products    String?  // produits/services (cours, sets, coaching, merch...)
+  expertise   String?  // domaines d'expertise spécifiques
+  audience    String?  // qui est mon audience cible
+  // Ma marque
+  catchphrases String? // expressions/phrases signatures
+  avoid       String?  // ce que je ne veux JAMAIS dire/faire
+  references  String?  // créateurs/marques qui m'inspirent
+  // Notes libres
+  freeNotes   String?  // tout ce qui n'entre pas dans les autres champs
+  updatedAt   DateTime @updatedAt
+}
+
+model CompetitorInspo {
+  id          String   @id @default(cuid())
+  workspaceId String
+  source      String   // ex: "@dj_snake", "concurrent", url...
+  text        String   // le texte du post concurrent
+  notes       String?  // notes optionnelles (ex: "200k vues", "bon hook")
+  createdAt   DateTime @default(now())
+}
+
+model ChatConversation {
+  id          String        @id @default(cuid())
+  workspaceId String
+  contactName String        // nom du contact (marque, follower, prospect)
+  contactType String        @default("prospect") // prospect, brand, follower, partner
+  platform    String        @default("instagram") // instagram, tiktok, twitter, linkedin, email
+  status      String        @default("active") // active, archived, converted
+  score       Int           @default(0) // score d'intérêt 0-100
+  tags        String?       // JSON array stringifié ["sponsoring", "collab", ...]
+  notes       String?       // notes internes sur la conversation
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  messages    ChatMessage[]
+  insights    ChatInsight[]
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  sender         String           // "me" ou nom du contact
+  content        String
+  createdAt      DateTime         @default(now())
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model ChatInsight {
+  id             String           @id @default(cuid())
+  conversationId String
+  type           String           // interest, emotion, opportunity, suggestion
+  label          String           // ex: "Intérêt fort", "Prêt à acheter"
+  description    String
+  priority       String           @default("medium") // low, medium, high
+  dismissed      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Persona {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  niche       String
+  tone        String
+  platform    String
+  bio         String
+  catchphrase String
+  visualStyle String
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SystemSetting {

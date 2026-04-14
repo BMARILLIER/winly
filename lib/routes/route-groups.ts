@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   "/hooks",
   "/bio",
   "/repurpose",
+  "/identity",
   "/calendar",
   "/coach",
   "/radar",
@@ -34,6 +35,8 @@ const PROTECTED_PREFIXES = [
   "/competitors",
   "/reports",
   "/growth-simulator",
+  "/live-chat",
+  "/persona",
   "/admin",
 ] as const;
 

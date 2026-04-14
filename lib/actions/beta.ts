@@ -27,6 +27,14 @@ export async function requestBetaAccess(
   _prev: BetaState,
   formData: FormData
 ): Promise<BetaState> {
+  // Rate limit
+  const { betaLimiter, getClientIp } = await import("@/lib/rate-limit");
+  const ip = await getClientIp();
+  const rl = betaLimiter.check(ip);
+  if (!rl.success) {
+    return { error: "Trop de tentatives. Veuillez réessayer dans quelques minutes." };
+  }
+
   const parsed = betaEmailSchema.safeParse({
     email: formData.get("email") ?? "",
   });

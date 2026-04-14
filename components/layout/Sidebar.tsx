@@ -15,6 +15,7 @@ import {
   Hash,
   UserCircle,
   Recycle,
+  Fingerprint,
   CalendarDays,
   MessageCircle,
   Radar,
@@ -37,6 +38,9 @@ import {
   ChevronRight,
   Menu,
   X,
+  DollarSign,
+  Bell,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -98,6 +102,18 @@ const navEntries: NavEntry[] = [
     ],
   },
   {
+    type: "link",
+    href: "/revenue",
+    label: "Revenue",
+    icon: DollarSign,
+  },
+  {
+    type: "link",
+    href: "/deal-analyzer",
+    label: "Deal Analyzer",
+    icon: Scale,
+  },
+  {
     type: "group",
     id: "intelligence",
     label: "Intelligence",
@@ -133,6 +149,7 @@ const navEntries: NavEntry[] = [
       { href: "/hashtags", label: "Hashtags", icon: Hash },
       { href: "/bio", label: "Bio", icon: UserCircle },
       { href: "/repurpose", label: "Repurpose", icon: Recycle },
+      { href: "/identity", label: "Mon identité", icon: Fingerprint },
     ],
   },
   {
@@ -146,6 +163,12 @@ const navEntries: NavEntry[] = [
     href: "/coach",
     label: "Coach",
     icon: MessageCircle,
+  },
+  {
+    type: "link",
+    href: "/live-chat",
+    label: "Live Chat",
+    icon: Zap,
   },
   {
     type: "group",

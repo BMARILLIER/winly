@@ -96,8 +96,30 @@ export async function fetchRecentMedia(token: string): Promise<IgMediaItem[]> {
 
 export async function fetchMediaInsights(
   mediaId: string,
-  token: string
+  token: string,
+  mediaType?: string
 ): Promise<IgMediaInsights> {
+  const isVideo = mediaType === "VIDEO";
+
+  // VIDEO/Reels: use views instead of impressions/plays
+  if (isVideo) {
+    const data = await graphGet<{
+      data: Array<{ name: string; values: Array<{ value: number }> }>;
+    }>(`/${mediaId}/insights?metric=reach,saved,views`, token);
+
+    const result: IgMediaInsights = {};
+    if (data?.data) {
+      for (const metric of data.data) {
+        const val = metric.values?.[0]?.value;
+        if (metric.name === "reach") result.reach = val;
+        if (metric.name === "saved") result.saved = val;
+        if (metric.name === "views") result.impressions = val;
+      }
+    }
+    return result;
+  }
+
+  // IMAGE / CAROUSEL: standard metrics
   const data = await graphGet<{
     data: Array<{ name: string; values: Array<{ value: number }> }>;
   }>(`/${mediaId}/insights?metric=reach,impressions,saved`, token);
@@ -127,7 +149,7 @@ export async function fetchAccountInsights(
       values?: Array<{ value: number }>;
     }>;
   }>(
-    `/${igUserId}/insights?metric=reach,impressions,profile_views&period=day&metric_type=total_value&since=${daysAgo(28)}&until=${todayTimestamp()}`,
+    `/${igUserId}/insights?metric=reach,views,profile_views&period=day&metric_type=total_value&since=${daysAgo(28)}&until=${todayTimestamp()}`,
     token
   );
 
@@ -136,7 +158,7 @@ export async function fetchAccountInsights(
     for (const metric of data.data) {
       const val = metric.total_value?.value;
       if (metric.name === "reach") result.reach = val;
-      if (metric.name === "impressions") result.impressions = val;
+      if (metric.name === "views") result.impressions = val;
       if (metric.name === "profile_views") result.profileViews = val;
     }
   }

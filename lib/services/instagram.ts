@@ -2,13 +2,30 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 // ─── Config ───
 
-const CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID ?? "";
-const CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET ?? "";
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/instagram/callback`;
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
   throw new Error("SESSION_SECRET must be set and at least 32 characters long");
 }
 const ENCRYPT_KEY = process.env.SESSION_SECRET.slice(0, 32);
+
+/**
+ * Resolve the redirect URI dynamically so it matches the current environment.
+ * Local dev → http://localhost:3000/api/instagram/callback
+ * Production → https://winly-lac.vercel.app/api/instagram/callback
+ */
+function getRedirectUri(): string {
+  if (process.env.NODE_ENV === "production") {
+    return `${process.env.NEXT_PUBLIC_APP_URL ?? "https://winly-lac.vercel.app"}/api/instagram/callback`;
+  }
+  return "https://localhost:3000/api/instagram/callback";
+}
+
+function getClientId(): string {
+  return process.env.INSTAGRAM_CLIENT_ID ?? "";
+}
+
+function getClientSecret(): string {
+  return process.env.INSTAGRAM_CLIENT_SECRET ?? "";
+}
 
 // ─── Encryption ───
 
@@ -29,14 +46,30 @@ export function decryptToken(encrypted: string): string {
 // ─── OAuth URLs ───
 
 export function buildAuthUrl(state: string): string {
+  const clientId = getClientId();
+  const redirectUri = getRedirectUri();
+
+  if (!clientId) {
+    throw new Error("INSTAGRAM_CLIENT_ID is not set — cannot build OAuth URL");
+  }
+
   const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    scope: "instagram_business_basic",
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: "instagram_business_basic,instagram_business_manage_insights",
     response_type: "code",
     state,
   });
-  return `https://www.instagram.com/oauth/authorize?${params}`;
+
+  const url = `https://www.instagram.com/oauth/authorize?${params}`;
+
+  console.log("[instagram] buildAuthUrl:", {
+    client_id: clientId ? "set" : "MISSING",
+    redirect_uri: redirectUri,
+    url,
+  });
+
+  return url;
 }
 
 // ─── Token Exchange ───
@@ -45,14 +78,17 @@ export async function exchangeCodeForToken(code: string): Promise<{
   access_token: string;
   user_id: string;
 }> {
+  const redirectUri = getRedirectUri();
+  console.log("[instagram] exchangeCodeForToken redirect_uri:", redirectUri);
+
   const res = await fetch("https://api.instagram.com/oauth/access_token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
+      client_id: getClientId(),
+      client_secret: getClientSecret(),
       grant_type: "authorization_code",
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       code,
     }),
   });
@@ -73,7 +109,7 @@ export async function getLongLivedToken(shortToken: string): Promise<{
 }> {
   const params = new URLSearchParams({
     grant_type: "ig_exchange_token",
-    client_secret: CLIENT_SECRET,
+    client_secret: getClientSecret(),
     access_token: shortToken,
   });
 

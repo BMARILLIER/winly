@@ -1,19 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isProtected, isGuestOnly, getRequiredRole, getHomeRedirect } from "@/lib/routes/route-groups";
+import { verifySession } from "@/lib/auth/session-crypto";
 
 // Inline the cookie name to avoid importing the auth barrel (which pulls in Prisma/libsql — incompatible with Edge runtime)
 const SESSION_COOKIE = "winly_session";
 
-function parseSession(raw: string): { userId: string; role: string } {
-  const sep = raw.indexOf(":");
-  if (sep === -1) return { userId: raw, role: "user" };
-  return { userId: raw.slice(0, sep), role: raw.slice(sep + 1) };
+function parsePayload(payload: string): { userId: string; role: string } {
+  const sep = payload.indexOf(":");
+  if (sep === -1) return { userId: payload, role: "free" };
+  return { userId: payload.slice(0, sep), role: payload.slice(sep + 1) };
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const raw = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = raw ? parseSession(raw) : null;
+
+  // Verify HMAC signature — reject tampered cookies silently
+  let session: { userId: string; role: string } | null = null;
+  if (raw) {
+    const payload = await verifySession(raw);
+    if (payload) {
+      session = parsePayload(payload);
+    }
+    // If verification fails, treat as unauthenticated (invalid/tampered cookie)
+  }
 
   // 1. Guest-only pages → connected users go to their home
   if (isGuestOnly(pathname) && session) {
@@ -66,6 +76,8 @@ export const config = {
     "/competitors/:path*",
     "/reports/:path*",
     "/growth-simulator/:path*",
+    "/live-chat/:path*",
+    "/persona/:path*",
     "/admin/:path*",
   ],
 };

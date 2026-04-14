@@ -1,77 +1,71 @@
 import Link from "next/link";
 import {
   Zap,
-  BarChart3,
-  Lightbulb,
+  Eye,
   CalendarDays,
-  Star,
+  ShieldCheck,
   ArrowRight,
+  ChevronDown,
+  UserCircle,
 } from "lucide-react";
 import { AnimatedDashboard } from "@/components/landing/AnimatedDashboard";
-import { AnimatedStats } from "@/components/landing/AnimatedStats";
 
 const features = [
   {
-    title: "Audit de Profil",
-    desc: "Analyse approfondie de vos profils réseaux sociaux avec des recommandations concrètes.",
+    title: "Persona IA",
+    desc: "Crée un personnage cohérent en 2 minutes — nom, bio, ton, univers visuel — prêt à publier.",
+    icon: UserCircle,
+  },
+  {
+    title: "Contenu anonyme",
+    desc: "Génère des posts, captions et hooks dans la voix de ton persona. Personne ne saura que c'est toi.",
     icon: Zap,
   },
   {
-    title: "Score Social",
-    desc: "Suivez vos performances avec un score unifié sur toutes les plateformes.",
-    icon: BarChart3,
-  },
-  {
-    title: "Idées de Contenu",
-    desc: "Suggestions de contenu personnalisées et adaptées à votre audience.",
-    icon: Lightbulb,
-  },
-  {
-    title: "Calendrier Éditorial",
-    desc: "Planifiez et programmez votre contenu sur toutes vos plateformes.",
+    title: "Calendrier fantôme",
+    desc: "Programme ton contenu à l'avance. Ton persona publie sans que tu apparaisses jamais.",
     icon: CalendarDays,
   },
-];
-
-const testimonials = [
   {
-    quote:
-      "Winly m'a permis de doubler mon engagement en 3 mois.",
-    name: "Sarah M.",
-    role: "Créatrice lifestyle",
-    initials: "SM",
-  },
-  {
-    quote:
-      "L'audit de profil est incroyablement précis. Je recommande à 100%.",
-    name: "Thomas K.",
-    role: "Community Manager",
-    initials: "TK",
-  },
-  {
-    quote:
-      "Le meilleur outil pour comprendre ce qui fonctionne sur mes réseaux.",
-    name: "Julie R.",
-    role: "Entrepreneure",
-    initials: "JR",
+    title: "Identité protégée",
+    desc: "Ton vrai nom, ton visage, tes infos personnelles n'apparaissent nulle part. Jamais.",
+    icon: ShieldCheck,
   },
 ];
 
 const steps = [
   {
     num: 1,
-    title: "Créez votre compte",
-    desc: "Inscription gratuite en moins de 30 secondes. Aucune carte bancaire requise.",
+    title: "Décris ton univers",
+    desc: "Choisis ta niche, ton style, tes valeurs. Winly génère un persona complet en quelques secondes.",
   },
   {
     num: 2,
-    title: "Lancez votre premier audit",
-    desc: "Connectez vos réseaux et obtenez une analyse complète de vos profils.",
+    title: "Génère ton contenu",
+    desc: "Des posts, des hooks, des captions — tout est créé dans la voix de ton alter ego et posté sous son nom.",
   },
   {
     num: 3,
-    title: "Suivez vos recommandations",
-    desc: "Appliquez les suggestions personnalisées et regardez votre audience grandir.",
+    title: "Reste invisible",
+    desc: "Ta vraie identité reste cachée. Toujours. Tu grandis sans jamais t'exposer.",
+  },
+];
+
+const faqs = [
+  {
+    question: "Mon vrai nom apparaît-il quelque part ?",
+    answer:
+      "Non, jamais. Ton compte Winly est séparé de ton persona public. Aucune information personnelle n'est partagée sur les réseaux.",
+  },
+  {
+    question: "Puis-je avoir plusieurs personas ?",
+    answer:
+      "Oui, jusqu'à 3 personas différents. Chacun avec son propre univers, ton, style et calendrier de contenu.",
+  },
+  {
+    question: "Ça marche sur TikTok aussi ?",
+    answer:
+      "Instagram d'abord — c'est notre plateforme principale. TikTok arrive bientôt, et d'autres plateformes suivront.",
   },
 ];
 
@@ -86,23 +80,19 @@ export default function LandingPage() {
         <div className="absolute top-0 right-0 h-[400px] w-[400px] rounded-full bg-cyan/5 blur-3xl" />
 
         <div className="relative mx-auto max-w-5xl px-6 text-center">
-          {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-surface-1 px-4 py-1.5 text-sm text-text-secondary">
-            <Star className="h-4 w-4 text-warning" />
-            Adopté par plus de 12 000 créateurs
-          </div>
-
           {/* Title */}
           <h1 className="text-5xl font-bold tracking-tight md:text-7xl leading-tight">
             <span className="bg-gradient-to-r from-primary via-violet to-cyan bg-clip-text text-transparent">
-              Power Your Social Growth
+              Crée ton alter ego.
             </span>
+            <br />
+            <span className="text-foreground">Reste invisible.</span>
           </h1>
 
           {/* Subtitle */}
           <p className="mt-6 text-lg md:text-xl text-text-secondary max-w-3xl mx-auto leading-relaxed">
-            Auditez vos profils, suivez votre score, générez des idées de contenu
-            et planifiez votre calendrier éditorial — tout en un seul endroit.
+            Winly génère un persona complet pour toi — nom, univers, style,
+            contenu — et poste à ta place.
           </p>
 
           {/* Buttons */}
@@ -111,7 +101,7 @@ export default function LandingPage() {
               href="/register"
               className="rounded-xl bg-gradient-to-r from-primary to-violet px-8 py-3.5 font-semibold text-white hover:opacity-90 transition-all duration-200 shadow-glow text-lg"
             >
-              Commencer gratuitement
+              Créer mon persona
             </Link>
             <Link
               href="/how-it-works"
@@ -126,17 +116,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── SOCIAL PROOF BAR (animated) ─── */}
-      <AnimatedStats />
-
       {/* ─── FEATURES ─── */}
       <section className="py-24">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-3xl md:text-4xl font-bold text-foreground">
-            Tout ce qu&apos;il faut pour grandir
+            Deviens créateur sans te montrer
           </h2>
           <p className="mt-4 text-center text-text-secondary text-lg">
-            Des outils puissants conçus pour les créateurs modernes
+            Tout ce qu&apos;il faut pour lancer un compte anonyme qui cartonne
           </p>
           <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
@@ -147,7 +134,9 @@ export default function LandingPage() {
                 <div className="mb-4 rounded-lg bg-accent-muted p-2.5 w-fit">
                   <f.icon className="h-5 w-5 text-accent" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground">{f.title}</h3>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {f.title}
+                </h3>
                 <p className="mt-2 text-sm text-text-secondary leading-relaxed">
                   {f.desc}
                 </p>
@@ -157,62 +146,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─── */}
-      <section className="py-24 border-t border-border">
-        <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-center text-3xl md:text-4xl font-bold text-foreground">
-            Ce que disent nos utilisateurs
-          </h2>
-          <p className="mt-4 text-center text-text-secondary text-lg">
-            Des milliers de créateurs nous font confiance
-          </p>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="rounded-xl border border-border bg-surface-1 p-6 transition-all duration-300 hover:border-border-hover hover:shadow-glow"
-              >
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-warning text-warning"
-                    />
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="text-foreground leading-relaxed mb-6">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-violet flex items-center justify-center text-sm font-bold text-white">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-text-muted">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS PREVIEW ─── */}
+      {/* ─── HOW IT WORKS ─── */}
       <section className="py-24 border-t border-border">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="text-center text-3xl md:text-4xl font-bold text-foreground">
-            Simple comme 1, 2, 3
+            3 étapes. Zéro exposition.
           </h2>
           <p className="mt-4 text-center text-text-secondary text-lg">
-            Commencez en quelques minutes
+            De l&apos;idée au premier post, sans jamais te montrer
           </p>
           <div className="mt-14 grid gap-8 md:grid-cols-3">
             {steps.map((s) => (
@@ -241,21 +182,50 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── FAQ ─── */}
+      <section className="py-24 border-t border-border">
+        <div className="mx-auto max-w-3xl px-6">
+          <h2 className="text-center text-3xl md:text-4xl font-bold text-foreground">
+            Questions fréquentes
+          </h2>
+          <p className="mt-4 text-center text-text-secondary text-lg">
+            Ce que tout le monde demande avant de se lancer
+          </p>
+          <div className="mt-14 space-y-4">
+            {faqs.map((faq) => (
+              <details
+                key={faq.question}
+                className="group rounded-xl border border-border bg-surface-1 transition-all duration-300 hover:border-border-hover"
+              >
+                <summary className="flex cursor-pointer items-center justify-between p-6 text-foreground font-semibold">
+                  <span>{faq.question}</span>
+                  <ChevronDown className="h-5 w-5 text-text-muted transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <div className="px-6 pb-6 text-text-secondary leading-relaxed">
+                  {faq.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA ─── */}
       <section className="border-t border-border bg-surface-1 py-20">
         <div className="mx-auto max-w-3xl px-6 text-center">
+          <Eye className="mx-auto h-12 w-12 text-text-muted mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-            Prêt à passer au niveau supérieur ?
+            Prêt à disparaître ?
           </h2>
           <p className="mt-4 text-lg text-text-secondary">
-            Rejoignez des milliers de créateurs qui utilisent WINLY pour
-            développer leur audience.
+            Crée ton persona, génère ton contenu, et laisse ton alter ego faire
+            le reste.
           </p>
           <Link
             href="/register"
             className="mt-10 inline-block rounded-xl bg-gradient-to-r from-primary to-violet px-10 py-4 text-lg font-semibold text-white hover:opacity-90 transition-all duration-200 shadow-glow"
           >
-            Essai gratuit
+            Créer mon persona gratuit
           </Link>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { getCachedResponse, setCachedResponse } from "@/lib/services/ai-cache";
 import { analyzeBio, generateBios, type BioAnalysis } from "@/modules/bio";
 
 const analyzeBioSchema = z.object({
@@ -14,7 +15,105 @@ const analyzeBioSchema = z.object({
 export interface BioState {
   analysis?: BioAnalysis;
   suggestions?: { text: string; style: string; description: string }[];
+  fromCache?: boolean;
   error?: string;
+}
+
+type BioSuggestion = { text: string; style: string; description: string };
+
+async function generateBiosWithAI(
+  bio: string,
+  niche: string,
+  platform: string,
+  profileType: string,
+  goals: string[]
+): Promise<BioSuggestion[] | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  // Check cache
+  const cacheKey = `${bio}:${platform}:${profileType}`;
+  const cached = await getCachedResponse<BioSuggestion[]>("bio", cacheKey, niche);
+  if (cached) return cached;
+
+  const profileLabels: Record<string, string> = {
+    personal_brand: "marque personnelle (créateur individuel)",
+    business: "compte professionnel / marque",
+    anonymous: "compte anonyme / thématique",
+  };
+
+  const goalLabels: Record<string, string> = {
+    grow_audience: "développer son audience",
+    monetize: "monétiser",
+    brand_awareness: "notoriété de marque",
+    engagement: "booster l'engagement",
+    consistency: "régularité de publication",
+  };
+
+  const goalsText = goals.map((g) => goalLabels[g] || g).join(", ");
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        system: `Tu es un expert en personal branding et réseaux sociaux.
+Tu génères des bios optimisées pour les profils sociaux.
+
+Contexte du créateur :
+- Niche : ${niche}
+- Plateforme : ${platform}
+- Type de profil : ${profileLabels[profileType] || profileType}
+- Objectifs : ${goalsText || "croissance générale"}
+- Bio actuelle : "${bio}"
+
+Règles :
+- Réponds UNIQUEMENT en JSON valide (pas de markdown, pas de backticks)
+- Chaque bio doit faire entre 80 et 150 caractères
+- Les bios doivent être en français
+- Adapte le ton et le vocabulaire à la niche (ex: pour un DJ, utilise le jargon musical)
+- Ne fais PAS de bio générique corporate — sois spécifique à l'univers du créateur
+- Inclus un CTA adapté à la plateforme
+- Chaque bio doit avoir un angle différent
+
+Structure JSON exacte :
+[
+  { "text": "bio texte ici", "style": "Nom du style", "description": "Courte description de l'angle choisi" },
+  { "text": "bio texte ici", "style": "Nom du style", "description": "Courte description de l'angle choisi" },
+  { "text": "bio texte ici", "style": "Nom du style", "description": "Courte description de l'angle choisi" }
+]`,
+        messages: [
+          {
+            role: "user",
+            content: `Génère 3 bios optimisées pour ce profil ${platform} dans la niche "${niche}".`,
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+
+    const body = await res.json();
+    const text = body.content?.[0]?.text;
+    if (!text) throw new Error("Réponse vide");
+
+    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as BioSuggestion[];
+
+    // Cache result
+    await setCachedResponse("bio", cacheKey, niche, parsed);
+
+    return parsed;
+  } catch (err) {
+    console.error("[bio-ai] Error:", err);
+    return null;
+  }
 }
 
 export async function analyzeBioAction(
@@ -41,9 +140,18 @@ export async function analyzeBioAction(
   if (!workspace) return { error: "Workspace not found." };
 
   const goals: string[] = JSON.parse(workspace.goals);
-
   const analysis = analyzeBio(bio, workspace.niche);
-  const suggestions = generateBios({
+
+  // Try AI generation first, fallback to local templates
+  const aiSuggestions = await generateBiosWithAI(
+    bio,
+    workspace.niche,
+    workspace.mainPlatform,
+    workspace.profileType,
+    goals
+  );
+
+  const suggestions = aiSuggestions ?? generateBios({
     niche: workspace.niche,
     platform: workspace.mainPlatform,
     profileType: workspace.profileType,

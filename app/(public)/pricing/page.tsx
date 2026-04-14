@@ -1,22 +1,21 @@
-import { PricingHero } from "@/components/pricing/PricingHero";
-import { PricingCards } from "@/components/pricing/PricingCards";
-import { ComparisonTable } from "@/components/pricing/ComparisonTable";
-import { PricingFAQ } from "@/components/pricing/PricingFAQ";
-import { PricingCTA } from "@/components/pricing/PricingCTA";
+import { PricingPlans } from "@/components/pricing/PricingPlans";
 
 export const metadata = {
   title: "Tarifs — Winly",
-  description: "D\u00e9couvrez les plans Winly adapt\u00e9s \u00e0 votre croissance sur les r\u00e9seaux sociaux.",
+  description:
+    "Choisissez le plan Winly adapté à votre croissance sur les réseaux sociaux.",
 };
 
 export default function PricingPage() {
   return (
-    <div>
-      <PricingHero />
-      <PricingCards />
-      <ComparisonTable />
-      <PricingFAQ />
-      <PricingCTA />
+    <div className="mx-auto max-w-5xl px-6 py-16">
+      <div className="mb-12 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">Tarifs Winly</h1>
+        <p className="mt-3 text-muted-foreground">
+          Commencez gratuitement. Passez en Pro quand vous êtes prêt à accélérer.
+        </p>
+      </div>
+      <PricingPlans />
     </div>
   );
 }

@@ -69,7 +69,7 @@ export async function syncInstagramData(userId: string): Promise<SyncResult> {
   let mediaSynced = 0;
   for (const item of mediaItems) {
     // Per-media insights (may fail for some media types)
-    const insights = await fetchMediaInsights(item.id, token);
+    const insights = await fetchMediaInsights(item.id, token, item.media_type);
 
     await prisma.instagramMedia.upsert({
       where: {

@@ -9,7 +9,9 @@ import {
   encryptToken,
 } from "@/lib/services/instagram";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = process.env.NODE_ENV === "production"
+  ? (process.env.NEXT_PUBLIC_APP_URL ?? "https://localhost:3000")
+  : "https://localhost:3000";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -17,14 +19,17 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
+  console.log("[instagram/callback] Params:", { code: code ? `${code.slice(0, 10)}...` : null, state: state?.slice(0, 10), error });
+
   // User denied access
   if (error) {
-    return NextResponse.redirect(new URL("/admin/instagram?ig=denied", APP_URL));
+    return NextResponse.redirect(new URL("/settings?ig=denied", APP_URL));
   }
 
   // Missing params
   if (!code || !state) {
-    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
+    console.error("[instagram/callback] Missing code or state");
+    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
   }
 
   // Validate CSRF state
@@ -33,7 +38,8 @@ export async function GET(request: NextRequest) {
   cookieStore.delete("ig_oauth_state");
 
   if (!storedState || storedState !== state) {
-    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
+    console.error("[instagram/callback] CSRF state mismatch");
+    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
   }
 
   // Check auth
@@ -44,13 +50,17 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Exchange code for short-lived token
+    console.log("[instagram/callback] Exchanging code for token...");
     const { access_token: shortToken } = await exchangeCodeForToken(code);
+    console.log("[instagram/callback] Short-lived token obtained");
 
     // 2. Exchange for long-lived token (60 days)
     const { access_token: longToken, expires_in } = await getLongLivedToken(shortToken);
+    console.log("[instagram/callback] Long-lived token obtained, expires_in:", expires_in);
 
     // 3. Get profile info
     const profile = await getInstagramProfile(longToken);
+    console.log("[instagram/callback] Profile:", profile.username);
 
     // 4. Store encrypted token
     const tokenExpiresAt = new Date(Date.now() + expires_in * 1000);
@@ -71,10 +81,11 @@ export async function GET(request: NextRequest) {
         tokenExpiresAt,
       },
     });
+    console.log("[instagram/callback] Connection saved for user:", userId);
 
-    return NextResponse.redirect(new URL("/admin/instagram?ig=success", APP_URL));
+    return NextResponse.redirect(new URL("/settings?ig=success", APP_URL));
   } catch (err) {
     console.error("[instagram/callback] Error:", err);
-    return NextResponse.redirect(new URL("/admin/instagram?ig=error", APP_URL));
+    return NextResponse.redirect(new URL("/settings?ig=error", APP_URL));
   }
 }
