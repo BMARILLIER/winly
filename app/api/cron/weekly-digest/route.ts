@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendWeeklyDigestEmail } from "@/lib/services/email";
 import { getProgressStats } from "@/lib/queries/progress-stats";
+import { getWeeklyInsights } from "@/lib/queries/weekly-insights";
+import { generateWeeklyReport } from "@/lib/services/weekly-report-ai";
 
 const MIN_INTERVAL_MS = 6 * 24 * 60 * 60 * 1000; // 6 jours (évite double envoi)
 
 /**
  * Weekly digest email cron.
  * Trigger via Vercel Cron (ex: every Sunday at 18:00 UTC).
- * Sends one email per user with progress + content stats.
+ * Sends one AI-enriched report per user.
  * Protected by CRON_SECRET header.
  */
 async function handle(req: Request) {
@@ -34,7 +36,7 @@ async function handle(req: Request) {
 
   for (const user of users) {
     try {
-      const [stats, workspaces, contentCreated] = await Promise.all([
+      const [stats, workspaces, contentCreated, insights] = await Promise.all([
         getProgressStats(user.id),
         prisma.workspace.findMany({
           where: { userId: user.id },
@@ -46,39 +48,44 @@ async function handle(req: Request) {
             createdAt: { gte: sinceWeekAgo },
           },
         }),
+        getWeeklyInsights(user.id),
       ]);
 
       // Skip users sans workspace (pas encore onboardés)
       if (workspaces.length === 0) continue;
 
-      // Suivi followers via snapshots IG si dispo
-      const connection = await prisma.instagramConnection.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      let newFollowers: number | null = null;
-      if (connection) {
-        const snapshots = await prisma.instagramSnapshot.findMany({
-          where: { connectionId: connection.id },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        });
-        const latest = snapshots[0];
-        const weekAgo = snapshots.find((s) => s.createdAt <= sinceWeekAgo);
-        if (latest?.followers != null && weekAgo?.followers != null) {
-          newFollowers = latest.followers - weekAgo.followers;
-        } else if (latest?.followers != null) {
-          newFollowers = 0;
-        }
-      }
+      const report = await generateWeeklyReport(insights);
 
       const result = await sendWeeklyDigestEmail(user.email, user.name, {
         totalXp: stats?.totalXp ?? 0,
         level: stats?.level ?? 1,
         streakDays: stats?.streakDays ?? 0,
-        newFollowers,
+        newFollowers: insights.followersDelta,
         contentCreated,
         alertsCount: 0,
+        intro: report.intro,
+        topPost: insights.topPost
+          ? {
+              type: insights.topPost.mediaType,
+              likes: insights.topPost.likeCount,
+              comments: insights.topPost.commentsCount,
+              caption: insights.topPost.caption,
+              permalink: insights.topPost.permalink,
+              reason: report.topPostReason,
+            }
+          : null,
+        flopPost: insights.flopPost
+          ? {
+              type: insights.flopPost.mediaType,
+              likes: insights.flopPost.likeCount,
+              comments: insights.flopPost.commentsCount,
+              caption: insights.flopPost.caption,
+              reason: report.flopPostReason,
+            }
+          : null,
+        engagementDeltaPct: insights.engagementDeltaPct,
+        actions: report.actions,
+        opportunity: report.opportunity,
       });
 
       if (result.sent) {
