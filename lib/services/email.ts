@@ -264,6 +264,57 @@ export async function sendWeeklyDigestEmail(
   });
 }
 
+export async function sendDailyCoachEmail(
+  to: string,
+  name: string | null,
+  mission: { title: string; body: string; estimatedTimeMin: number },
+) {
+  const displayName = name?.trim() || "créateur";
+  const text = `Salut ${displayName},
+
+🎯 Ta mission du jour (${mission.estimatedTimeMin} min) :
+
+${mission.title}
+
+${mission.body}
+
+Go : ${APP_URL}/dashboard
+
+— Winly
+(Désactive le coach quotidien : ${APP_URL}/settings)`;
+
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#0b0b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0f;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#17171f;border-radius:12px;overflow:hidden;">
+        <tr><td style="padding:28px 24px 8px;">
+          <div style="font-size:12px;color:#9b9ba3;letter-spacing:2px;text-transform:uppercase;">Winly · Mission du jour</div>
+          <h1 style="color:#e5e5ea;font-size:22px;margin:8px 0 4px;">🎯 ${escapeHtml(mission.title)}</h1>
+          <div style="color:#9b9ba3;font-size:12px;margin-top:4px;">⏱ ${mission.estimatedTimeMin} min</div>
+        </td></tr>
+        <tr><td style="padding:12px 24px 20px;">
+          <p style="color:#e5e5ea;font-size:15px;line-height:1.6;margin:0;">${escapeHtml(mission.body)}</p>
+        </td></tr>
+        <tr><td style="padding:8px 24px 24px;text-align:center;">
+          <a href="${APP_URL}/dashboard" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">C'est parti →</a>
+        </td></tr>
+        <tr><td style="padding:16px 24px 24px;color:#9b9ba3;font-size:11px;text-align:center;">
+          <a href="${APP_URL}/settings" style="color:#9b9ba3;">Désactiver le coach quotidien</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return sendEmail({
+    to,
+    subject: `🎯 Mission du jour : ${mission.title}`,
+    text,
+    html,
+  });
+}
+
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   return sendEmail({
     to,

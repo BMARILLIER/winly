@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { WorkspaceSettingsForm } from "./workspace-form";
 import { InstagramConnection } from "@/components/settings/instagram-connection";
 import { BillingSection } from "@/components/settings/billing-section";
+import { DailyCoachToggle } from "@/components/settings/daily-coach-toggle";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
 
   const billing = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { plan: true, stripeCustomerId: true },
+    select: { plan: true, stripeCustomerId: true, dailyCoachEnabled: true },
   });
 
   return (
@@ -31,6 +32,7 @@ export default async function SettingsPage() {
         <Suspense fallback={null}>
           <InstagramConnection />
         </Suspense>
+        <DailyCoachToggle initialEnabled={billing?.dailyCoachEnabled ?? false} />
         <WorkspaceSettingsForm workspace={workspace} />
       </div>
     </div>
