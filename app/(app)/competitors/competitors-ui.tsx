@@ -18,17 +18,6 @@ const radarData = radarLabels.map((label, i) => {
 export function CompetitorsUI() {
   return (
     <div className="space-y-8">
-      <SectionHeader
-        title="Concurrents"
-        description="Comparez vos performances avec des créateurs similaires"
-        action={
-          <Button variant="secondary" size="sm">
-            <UserPlus className="h-4 w-4" />
-            Ajouter un concurrent
-          </Button>
-        }
-      />
-
       <Card>
         <CardHeader>
           <CardTitle>Radar concurrentiel</CardTitle>
