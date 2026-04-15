@@ -4,7 +4,8 @@ import { useState } from "react";
 import { calculateViralScore, BADGE_STYLES } from "@/modules/viral-score";
 import type { ViralScoreResult } from "@/modules/viral-score";
 import { SectionHeader, Card, CardHeader, CardTitle, Badge } from "@/components/ui";
-import { Zap } from "lucide-react";
+import { Sparkles, Zap } from "lucide-react";
+import { ViralScoreAIPanel } from "./viral-score-ai-panel";
 
 const FORMATS = [
   { id: "reel", label: "Reel / Short" },
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function ViralScoreUI({ platform, niche }: Props) {
+  const [tab, setTab] = useState<"ai" | "quick">("ai");
   const [format, setFormat] = useState("reel");
   const [duration, setDuration] = useState<"short" | "medium" | "long">("short");
   const [hookStrength, setHookStrength] = useState<"weak" | "medium" | "strong">("medium");
@@ -65,6 +67,33 @@ export function ViralScoreUI({ platform, niche }: Props) {
         description="Estimez le potentiel viral de votre prochain contenu"
       />
 
+      <div className="flex gap-2 border-b border-border">
+        <button
+          onClick={() => setTab("ai")}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "ai"
+              ? "border-accent text-accent"
+              : "border-transparent text-text-secondary hover:text-foreground"
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          Analyse IA (sur ton brouillon)
+        </button>
+        <button
+          onClick={() => setTab("quick")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "quick"
+              ? "border-accent text-accent"
+              : "border-transparent text-text-secondary hover:text-foreground"
+          }`}
+        >
+          Estimation rapide
+        </button>
+      </div>
+
+      {tab === "ai" && <ViralScoreAIPanel platform={platform} niche={niche} />}
+
+      {tab === "quick" && (
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Form */}
         <div className="space-y-5">
@@ -146,6 +175,7 @@ export function ViralScoreUI({ platform, niche }: Props) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
