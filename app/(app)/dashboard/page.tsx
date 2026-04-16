@@ -15,6 +15,10 @@ import { getDefaultCreatorProfile, type CreatorProfile } from "@/modules/deal-an
 import { CommandCenterUI } from "./command-center-ui";
 import { FirstWinCard } from "@/components/onboarding/FirstWinCard";
 import { DemoBanner } from "@/components/ui/demo-banner";
+import { StreakCard } from "@/components/ui/streak-card";
+import { AchievementsCard } from "@/components/ui/achievements-card";
+import { getProgressStats } from "@/lib/queries/progress-stats";
+import { getAchievements } from "@/lib/queries/achievements";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -37,7 +41,11 @@ export default async function DashboardPage() {
   });
 
   // Fetch Instagram metrics for the three new engines
-  const igMetrics = await getInstagramMetrics(user.id);
+  const [igMetrics, progressStats, achievements] = await Promise.all([
+    getInstagramMetrics(user.id),
+    getProgressStats(user.id),
+    getAchievements(user.id),
+  ]);
 
   // --- Revenue Engine ---
   const revenueReport = igMetrics
@@ -99,6 +107,20 @@ export default async function DashboardPage() {
         <DemoBanner feature="Le dashboard (chiffres d'exemple basés sur ta niche tant qu'Instagram n'est pas connecté)" />
       )}
       <FirstWinCard userId={user.id} workspaceId={workspace.id} />
+      {progressStats && (
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <StreakCard
+            streakDays={progressStats.streakDays}
+            completedToday={progressStats.completedToday}
+            level={progressStats.level}
+            totalXp={progressStats.totalXp}
+            progressPct={progressStats.progressPct}
+            xpInLevel={progressStats.xpInLevel}
+            xpToNextLevel={progressStats.xpToNextLevel}
+          />
+          <AchievementsCard achievements={achievements} />
+        </div>
+      )}
       <CommandCenterUI
         workspaceId={workspace.id}
         workspaceName={workspace.name}
