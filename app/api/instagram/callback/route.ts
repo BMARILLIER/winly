@@ -66,29 +66,40 @@ export async function GET(request: NextRequest) {
     // 4. Store encrypted token (supports multi-account)
     const tokenExpiresAt = new Date(Date.now() + expires_in * 1000);
 
-    // Deactivate all existing connections, then upsert the new one as active
-    await prisma.instagramConnection.updateMany({
-      where: { userId },
-      data: { isActive: false },
-    });
+    try {
+      // New schema: composite unique (userId, igUserId)
+      await prisma.instagramConnection.updateMany({
+        where: { userId },
+        data: { isActive: false },
+      });
 
-    await prisma.instagramConnection.upsert({
-      where: { userId_igUserId: { userId, igUserId: profile.id } },
-      create: {
-        userId,
-        igUserId: profile.id,
-        igUsername: profile.username,
-        accessToken: encryptToken(longToken),
-        tokenExpiresAt,
-        isActive: true,
-      },
-      update: {
-        igUsername: profile.username,
-        accessToken: encryptToken(longToken),
-        tokenExpiresAt,
-        isActive: true,
-      },
-    });
+      await prisma.instagramConnection.upsert({
+        where: { userId_igUserId: { userId, igUserId: profile.id } },
+        create: {
+          userId,
+          igUserId: profile.id,
+          igUsername: profile.username,
+          accessToken: encryptToken(longToken),
+          tokenExpiresAt,
+          isActive: true,
+        },
+        update: {
+          igUsername: profile.username,
+          accessToken: encryptToken(longToken),
+          tokenExpiresAt,
+          isActive: true,
+        },
+      });
+    } catch {
+      // Fallback: old schema with @@unique([userId])
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO InstagramConnection (id, userId, igUserId, igUsername, accessToken, tokenExpiresAt, connectedAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+         ON CONFLICT(userId) DO UPDATE SET igUserId=?, igUsername=?, accessToken=?, tokenExpiresAt=?, updatedAt=datetime('now')`,
+        `cig_${Date.now()}`, userId, profile.id, profile.username, encryptToken(longToken), tokenExpiresAt.toISOString(),
+        profile.id, profile.username, encryptToken(longToken), tokenExpiresAt.toISOString(),
+      );
+    }
     console.log("[instagram/callback] Connection saved for user:", userId, "ig:", profile.username);
 
     // 5. Auto-sync: fetch followers, media, stats immediately
