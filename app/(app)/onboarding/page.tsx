@@ -62,18 +62,33 @@ export default function OnboardingPage() {
 
   const error = localError || state?.error || "";
 
+  const stepLabels = ["Profil", "Plateforme", "Niche", "Objectifs", "Fréquence"];
+
   return (
     <div className="mx-auto max-w-xl">
       {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-sm text-text-secondary mb-2">
-          <span>Étape {step} sur {TOTAL_STEPS}</span>
+          <span>Étape {step}/{TOTAL_STEPS} — {stepLabels[step - 1]}</span>
+          <span className="text-xs text-text-muted">~2 min</span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-surface-3">
           <div
             className="h-1.5 rounded-full bg-accent transition-all duration-300"
             style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
           />
+        </div>
+        <div className="flex justify-between mt-2">
+          {stepLabels.map((label, i) => (
+            <span
+              key={label}
+              className={`text-[10px] ${
+                i + 1 <= step ? "text-accent font-medium" : "text-text-muted"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
         </div>
       </div>
 

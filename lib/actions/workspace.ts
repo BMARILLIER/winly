@@ -56,7 +56,7 @@ export async function createWorkspace(
     },
   });
 
-  redirect("/dashboard");
+  redirect("/onboarding/connect");
 }
 
 export async function updateWorkspace(
