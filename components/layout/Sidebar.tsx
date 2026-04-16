@@ -42,6 +42,7 @@ import {
   DollarSign,
   Bell,
   Scale,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -182,6 +183,12 @@ const navEntries: NavEntry[] = [
     href: "/recap",
     label: "Mon Recap",
     icon: Award,
+  },
+  {
+    type: "link",
+    href: "/referral",
+    label: "Parrainage",
+    icon: Gift,
   },
   {
     type: "group",

@@ -3,12 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useActionState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Gift } from "lucide-react";
 import { register, type AuthState } from "@/lib/actions/auth";
 
 export default function RegisterPage() {
   const [state, action, pending] = useActionState<AuthState, FormData>(register, null);
   const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref") ?? "";
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
@@ -67,6 +70,15 @@ export default function RegisterPage() {
           )}
 
           <form action={action} className="mt-6 space-y-4">
+            {refCode && (
+              <>
+                <input type="hidden" name="referralCode" value={refCode} />
+                <div className="flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2 text-xs text-accent">
+                  <Gift className="h-3.5 w-3.5" />
+                  Code parrainage active — tu recois 5 credits IA bonus !
+                </div>
+              </>
+            )}
             <div>
               <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wider text-text-muted">
                 Nom

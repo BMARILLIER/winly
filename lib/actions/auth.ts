@@ -92,6 +92,14 @@ export async function register(
     console.error("[auth] welcome email failed:", err),
   );
 
+  // Apply referral code if present
+  const refCode = formData.get("referralCode") as string | null;
+  if (refCode?.trim()) {
+    import("@/lib/services/referral")
+      .then(({ applyReferralCode }) => applyReferralCode(user.id, refCode.trim()))
+      .catch((err) => console.error("[auth] referral failed:", err));
+  }
+
   await setSession(user.id, user.role);
   redirect("/onboarding");
 }
