@@ -178,6 +178,12 @@ const navEntries: NavEntry[] = [
     icon: MessageCircle,
   },
   {
+    type: "link",
+    href: "/recap",
+    label: "Mon Recap",
+    icon: Award,
+  },
+  {
     type: "group",
     id: "concurrents-opportunites",
     label: "Concurrents & Opportunit\u00e9s",
