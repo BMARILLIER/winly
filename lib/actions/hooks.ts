@@ -44,11 +44,18 @@ export async function saveHook(formData: FormData): Promise<void> {
   revalidatePath("/hooks");
 }
 
+export interface HookWithPayoff {
+  text: string;
+  payoff: string;
+  verified: boolean;
+  verificationNote: string | null;
+}
+
 export async function generateHooksWithAI(
   topic: string,
   hookType: string | null,
   niche: string
-): Promise<{ ok: boolean; hooks?: string[]; error?: string }> {
+): Promise<{ ok: boolean; hooks?: HookWithPayoff[]; error?: string }> {
   const userId = await getSession();
   if (!userId) return { ok: false, error: "Non connecté." };
 
@@ -57,9 +64,14 @@ export async function generateHooksWithAI(
 
   // Check cache first (cached responses don't consume credits)
   const { getCachedResponse, setCachedResponse } = await import("@/lib/services/ai-cache");
-  const cached = await getCachedResponse<string[]>("hooks", topic || niche, niche, hookType ?? "all");
+  const cached = await getCachedResponse<HookWithPayoff[] | string[]>("hooks", topic || niche, niche, hookType ?? "all");
   if (cached) {
-    return { ok: true, hooks: cached };
+    const normalized: HookWithPayoff[] = cached.map((h) =>
+      typeof h === "string"
+        ? { text: h, payoff: "", verified: true, verificationNote: null }
+        : h,
+    );
+    return { ok: true, hooks: normalized };
   }
 
   const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
@@ -88,7 +100,7 @@ export async function generateHooksWithAI(
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 800,
-        system: `Tu es un expert en copywriting pour les réseaux sociaux. Tu crées des hooks (phrases d'accroche) percutants en français.
+        system: `Tu es un expert en copywriting pour les réseaux sociaux. Tu crées des hooks (phrases d'accroche) percutants en français, AVEC leur réponse/développement.
 
 Règles :
 - Chaque hook fait 1 à 2 phrases maximum
@@ -96,15 +108,27 @@ Règles :
 - Adapté à la niche : ${niche}
 - ${typeInstruction}
 - Ton : direct, authentique, engageant
-- Pas de hashtags, pas d'emojis
-- Réponds UNIQUEMENT en JSON valide : { "hooks": ["hook1", "hook2", ...] }
+- Pas de hashtags, pas d'emojis dans le hook
+- IMPORTANT : pour chaque hook, fournis le "payoff" = la réponse/le développement (2-4 phrases) qui suit le hook
+- IMPORTANT FIABILITÉ : chaque fait, chiffre, statistique ou affirmation dans le hook ET le payoff DOIT être vérifiable et exact. Ne cite JAMAIS de chiffre inventé. Si tu n'es pas sûr à 100% d'un fait, mets verified=false et explique dans verificationNote exactement ce qui doit être vérifié par le créateur avant publication. Préfère des vérités universellement reconnues plutôt que des stats douteuses. En cas de doute, utilise "selon certaines études" ou reformule sans chiffre précis.
+- Réponds UNIQUEMENT en JSON valide :
+{
+  "hooks": [
+    {
+      "text": "Le hook ici",
+      "payoff": "Le développement/la réponse qui suit le hook (2-4 phrases)",
+      "verified": true,
+      "verificationNote": null
+    }
+  ]
+}
 - Génère exactement 6 hooks différents`,
         messages: [
           {
             role: "user",
             content: topic.trim()
-              ? `Génère 6 hooks sur le sujet : "${topic}"`
-              : `Génère 6 hooks variés pour un créateur dans la niche "${niche}"`,
+              ? `Génère 6 hooks sur le sujet : "${topic}". Pour chaque hook, donne la réponse/le développement vérifié.`
+              : `Génère 6 hooks variés pour un créateur dans la niche "${niche}". Pour chaque hook, donne la réponse/le développement vérifié.`,
           },
         ],
       }),
@@ -118,12 +142,18 @@ Règles :
 
     // Strip markdown code fences if present
     const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    const parsed = JSON.parse(cleaned) as { hooks: string[] };
+    const parsed = JSON.parse(cleaned) as { hooks: HookWithPayoff[] | string[] };
 
-    // Save to cache
-    await setCachedResponse("hooks", topic || niche, niche, parsed.hooks, hookType ?? "all");
+    // Normalize: support both old format (string[]) and new format (HookWithPayoff[])
+    const hooks: HookWithPayoff[] = parsed.hooks.map((h) =>
+      typeof h === "string"
+        ? { text: h, payoff: "", verified: true, verificationNote: null }
+        : { text: h.text, payoff: h.payoff ?? "", verified: h.verified ?? true, verificationNote: h.verificationNote ?? null },
+    );
 
-    return { ok: true, hooks: parsed.hooks };
+    await setCachedResponse("hooks", topic || niche, niche, hooks, hookType ?? "all");
+
+    return { ok: true, hooks };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[hooks-ai] Error:", msg);

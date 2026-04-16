@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveHook, generateHooksWithAI } from "@/lib/actions/hooks";
+import { saveHook, generateHooksWithAI, type HookWithPayoff } from "@/lib/actions/hooks";
 import { generateHooks, HOOK_TYPES } from "@/modules/hooks";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ChevronDown, ShieldCheck, AlertTriangle } from "lucide-react";
 
 interface Props {
   niche: string;
@@ -42,20 +42,25 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
     setIsAiMode(false);
   }
 
+  const [aiHooks, setAiHooks] = useState<HookWithPayoff[]>([]);
+  const [expandedHook, setExpandedHook] = useState<number | null>(null);
+
   async function handleAiGenerate() {
     setGenerating(true);
     setAiError("");
     const result = await generateHooksWithAI(topic, selectedType, niche);
     setGenerating(false);
     if (result.ok && result.hooks) {
+      setAiHooks(result.hooks);
       setHooks(
-        result.hooks.map((text) => ({
-          text,
+        result.hooks.map((h) => ({
+          text: h.text,
           type: selectedType ?? "curiosity",
         }))
       );
       setSavedIds(new Set());
       setIsAiMode(true);
+      setExpandedHook(null);
     } else {
       setAiError(result.error ?? "Erreur inconnue.");
     }
@@ -143,44 +148,90 @@ export function HookGenerator({ niche, workspaceId, activeType }: Props) {
         {hooks.map((hook, i) => {
           const typeInfo = HOOK_TYPES.find((t) => t.id === hook.type);
           const isSaved = savedIds.has(i);
+          const aiHook = isAiMode ? aiHooks[i] : null;
+          const isExpanded = expandedHook === i;
 
           return (
             <div
               key={`${hook.text}-${i}`}
-              className="rounded-xl border border-border bg-surface-1 p-5 flex items-start justify-between gap-4 transition-all duration-200 hover:border-border-hover"
+              className="rounded-xl border border-border bg-surface-1 transition-all duration-200 hover:border-border-hover"
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {hook.text}
-                </p>
-                <span
-                  className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${typeInfo?.color ?? "bg-surface-2 text-text-secondary"}`}
-                >
-                  {typeInfo?.label ?? hook.type}
-                </span>
+              <div className="p-5 flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {hook.text}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${typeInfo?.color ?? "bg-surface-2 text-text-secondary"}`}
+                    >
+                      {typeInfo?.label ?? hook.type}
+                    </span>
+                    {aiHook && (
+                      <>
+                        {aiHook.verified ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                            <ShieldCheck className="h-3 w-3" /> Vérifié
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                            <AlertTriangle className="h-3 w-3" /> À vérifier
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {aiHook?.payoff && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedHook(isExpanded ? null : i)}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-2 transition-colors flex items-center gap-1"
+                    >
+                      Développement
+                      <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+                  {isSaved ? (
+                    <span className="rounded-lg px-3 py-1.5 text-xs font-medium text-success">
+                      Sauvegardé
+                    </span>
+                  ) : (
+                    <form
+                      action={async (formData) => {
+                        await saveHook(formData);
+                        markSaved(i);
+                      }}
+                    >
+                      <input type="hidden" name="workspaceId" value={workspaceId} />
+                      <input type="hidden" name="text" value={hook.text} />
+                      <input type="hidden" name="type" value={hook.type} />
+                      <button
+                        type="submit"
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent-muted transition-colors"
+                      >
+                        + Sauvegarder
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
 
-              {isSaved ? (
-                <span className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-success">
-                  Sauvegardé
-                </span>
-              ) : (
-                <form
-                  action={async (formData) => {
-                    await saveHook(formData);
-                    markSaved(i);
-                  }}
-                >
-                  <input type="hidden" name="workspaceId" value={workspaceId} />
-                  <input type="hidden" name="text" value={hook.text} />
-                  <input type="hidden" name="type" value={hook.type} />
-                  <button
-                    type="submit"
-                    className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent-muted transition-colors"
-                  >
-                    + Sauvegarder
-                  </button>
-                </form>
+              {/* Payoff / development */}
+              {isExpanded && aiHook?.payoff && (
+                <div className="border-t border-border px-5 py-4 bg-surface-2/50">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {aiHook.payoff}
+                  </p>
+                  {aiHook.verificationNote && (
+                    <div className="mt-3 flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-xs text-warning">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>{aiHook.verificationNote}</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           );
