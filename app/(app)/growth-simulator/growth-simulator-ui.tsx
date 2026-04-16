@@ -31,14 +31,26 @@ const verdictConfig = {
 
 const impactVariant = { high: "danger", medium: "warning", low: "info" } as const;
 
-export function GrowthSimulatorUI() {
-  // Form state
-  const [followers, setFollowers] = useState("12000");
+interface Props {
+  initialFollowers?: number;
+  initialEngagement?: number;
+  initialNiche?: string;
+  initialPlatform?: string;
+}
+
+export function GrowthSimulatorUI({
+  initialFollowers,
+  initialEngagement,
+  initialNiche,
+  initialPlatform,
+}: Props = {}) {
+  // Form state — pre-filled with real IG data if available
+  const [followers, setFollowers] = useState(String(initialFollowers ?? 12000));
   const [postsPerWeek, setPostsPerWeek] = useState("3");
-  const [niche, setNiche] = useState<Niche>("entrepreneurship");
+  const [niche, setNiche] = useState<Niche>((initialNiche as Niche) ?? "entrepreneurship");
   const [format, setFormat] = useState<ContentFormat>("carousel");
-  const [platform, setPlatform] = useState<Platform>("instagram");
-  const [engagementRate, setEngagementRate] = useState("4.2");
+  const [platform, setPlatform] = useState<Platform>((initialPlatform as Platform) ?? "instagram");
+  const [engagementRate, setEngagementRate] = useState(String(initialEngagement ?? 4.2));
 
   // Result
   const [result, setResult] = useState<SimulatorResult | null>(null);

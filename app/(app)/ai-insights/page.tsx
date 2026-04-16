@@ -4,15 +4,42 @@ import { prisma } from "@/lib/db";
 import { InsightsUI, type InsightsPageData } from "./insights-ui";
 import { insights as mockInsights, insightSummary as mockSummary } from "@/lib/mock/ai-insights";
 import { DemoBanner } from "@/components/ui/demo-banner";
+import { getInstagramMetrics } from "@/lib/services/instagram-metrics";
+import { generateInsightsFromMetrics } from "@/lib/services/ai-insights";
 
 export default async function AIInsightsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const dbInsights = await prisma.aiInsight.findMany({
+  let dbInsights = await prisma.aiInsight.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
+
+  // Auto-generate insights if IG connected but no insights yet
+  if (dbInsights.length === 0) {
+    const igMetrics = await getInstagramMetrics(user.id);
+    if (igMetrics) {
+      const result = await generateInsightsFromMetrics(user.id);
+      if (result.ok && result.insights.length > 0) {
+        await prisma.aiInsight.createMany({
+          data: result.insights.map((insight) => ({
+            userId: user.id,
+            category: insight.category,
+            title: insight.title,
+            description: insight.description,
+            impact: insight.impact,
+            metric: insight.metric,
+            source: result.source,
+          })),
+        });
+        dbInsights = await prisma.aiInsight.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+        });
+      }
+    }
+  }
 
   let data: InsightsPageData;
 
@@ -23,7 +50,7 @@ export default async function AIInsightsPage() {
     data = {
       source,
       generatedAt,
-      summary: null, // summary is in the insights themselves (first generation)
+      summary: null,
       insights: dbInsights.map((i) => ({
         id: i.id,
         title: i.title,
