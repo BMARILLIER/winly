@@ -165,6 +165,27 @@ export async function fetchAccountInsights(
   return result;
 }
 
+// ─── Comments ───
+
+export interface IgComment {
+  id: string;
+  text: string;
+  username: string;
+  timestamp: string;
+  like_count?: number;
+}
+
+export async function fetchMediaComments(
+  mediaId: string,
+  token: string,
+): Promise<IgComment[]> {
+  const data = await graphGet<{
+    data: IgComment[];
+  }>(`/${mediaId}/comments?fields=id,text,username,timestamp,like_count&limit=50`, token);
+
+  return data?.data ?? [];
+}
+
 // ─── Date helpers ───
 
 function daysAgo(n: number): number {

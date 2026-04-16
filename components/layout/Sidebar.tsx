@@ -171,6 +171,12 @@ const navEntries: NavEntry[] = [
     icon: Zap,
   },
   {
+    type: "link",
+    href: "/comments",
+    label: "Commentaires IA",
+    icon: MessageCircle,
+  },
+  {
     type: "group",
     id: "concurrents-opportunites",
     label: "Concurrents & Opportunit\u00e9s",
