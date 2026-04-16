@@ -19,6 +19,8 @@ import { StreakCard } from "@/components/ui/streak-card";
 import { AchievementsCard } from "@/components/ui/achievements-card";
 import { getProgressStats } from "@/lib/queries/progress-stats";
 import { getAchievements } from "@/lib/queries/achievements";
+import { getBestTimeToPost } from "@/lib/queries/best-time-to-post";
+import { BestTimeCard } from "@/components/ui/best-time-card";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -41,10 +43,11 @@ export default async function DashboardPage() {
   });
 
   // Fetch Instagram metrics for the three new engines
-  const [igMetrics, progressStats, achievements] = await Promise.all([
+  const [igMetrics, progressStats, achievements, bestTime] = await Promise.all([
     getInstagramMetrics(user.id),
     getProgressStats(user.id),
     getAchievements(user.id),
+    getBestTimeToPost(user.id),
   ]);
 
   // --- Revenue Engine ---
@@ -121,6 +124,9 @@ export default async function DashboardPage() {
           <AchievementsCard achievements={achievements} />
         </div>
       )}
+      <div className="mb-6">
+        <BestTimeCard data={bestTime} />
+      </div>
       <CommandCenterUI
         workspaceId={workspace.id}
         workspaceName={workspace.name}
