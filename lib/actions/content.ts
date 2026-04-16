@@ -178,6 +178,84 @@ export async function generateContentWithAI(
   };
   const formatLabel = formatLabels[format] || format;
 
+  // Enrichissement contextuel : concurrents, top posts, identité
+  const workspace = await prisma.workspace.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
+
+  let contextBlock = "";
+
+  if (workspace) {
+    const [competitorInspos, identity, connection] = await Promise.all([
+      prisma.competitorInspo.findMany({
+        where: { workspaceId: workspace.id },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: { source: true, text: true, notes: true },
+      }),
+      prisma.creatorIdentity.findUnique({
+        where: { workspaceId: workspace.id },
+        select: { tone: true, values: true, catchphrases: true, avoid: true, audience: true },
+      }),
+      prisma.instagramConnection.findUnique({
+        where: { userId },
+        select: { id: true },
+      }),
+    ]);
+
+    let topPosts: { caption: string | null; likes: number; comments: number; type: string }[] = [];
+    if (connection) {
+      const media = await prisma.instagramMedia.findMany({
+        where: { connectionId: connection.id },
+        orderBy: { timestamp: "desc" },
+        take: 15,
+      });
+      topPosts = media
+        .sort((a, b) => b.likeCount + b.commentsCount - (a.likeCount + a.commentsCount))
+        .slice(0, 3)
+        .map((m) => ({
+          caption: m.caption?.slice(0, 200) ?? null,
+          likes: m.likeCount,
+          comments: m.commentsCount,
+          type: m.mediaType,
+        }));
+    }
+
+    const parts: string[] = [];
+
+    if (identity) {
+      const id: string[] = [];
+      if (identity.tone) id.push(`Ton de communication : ${identity.tone}`);
+      if (identity.values) id.push(`Valeurs : ${identity.values}`);
+      if (identity.catchphrases) id.push(`Expressions signatures : ${identity.catchphrases}`);
+      if (identity.avoid) id.push(`À ÉVITER absolument : ${identity.avoid}`);
+      if (identity.audience) id.push(`Audience cible : ${identity.audience}`);
+      if (id.length > 0) parts.push(`IDENTITÉ CRÉATEUR :\n${id.join("\n")}`);
+    }
+
+    if (topPosts.length > 0) {
+      const tp = topPosts.map((p) =>
+        `- [${p.type}] ❤️${p.likes} 💬${p.comments} : "${p.caption ?? "(sans légende)"}"`
+      ).join("\n");
+      parts.push(`MES TOP POSTS (ce qui marche pour moi) :\n${tp}`);
+    }
+
+    if (competitorInspos.length > 0) {
+      const ci = competitorInspos.map((c) => {
+        const lines = [`Concurrent ${c.source} :`];
+        if (c.notes) lines.push(`Analyse IA : ${c.notes.slice(0, 200)}`);
+        lines.push(`Posts : "${c.text.slice(0, 200)}"`);
+        return lines.join("\n");
+      }).join("\n\n");
+      parts.push(`ANALYSES CONCURRENTIELLES RÉCENTES :\n${ci}`);
+    }
+
+    if (parts.length > 0) {
+      contextBlock = `\n\nCONTEXTE DU CRÉATEUR (utilise ces données pour personnaliser le contenu) :\n\n${parts.join("\n\n")}`;
+    }
+  }
+
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -200,13 +278,14 @@ Règles :
 - Le hook doit capter l'attention immédiatement (1 phrase percutante)
 - La caption doit être complète et prête à publier (3-5 phrases)
 - Le CTA doit encourager l'interaction
+- IMPORTANT : inspire-toi des patterns concurrentiels ET du style du créateur ci-dessous pour produire un contenu unique et adapté
 
 Structure JSON exacte :
 {
   "hook": "phrase d'accroche percutante",
   "caption": "légende complète prête à publier avec emojis et hashtags",
   "cta": "appel à l'action engageant"
-}`,
+}${contextBlock}`,
         messages: [
           {
             role: "user",
