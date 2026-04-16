@@ -10,30 +10,37 @@ export async function GET(req: NextRequest) {
 
   const email = req.nextUrl.searchParams.get("email");
   const password = req.nextUrl.searchParams.get("password");
+  const name = req.nextUrl.searchParams.get("name") ?? "Crowft";
 
   if (!email || !password) {
     return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
   }
 
-  // List all users if no match found
-  const allUsers = await prisma.user.findMany({
-    select: { id: true, email: true, name: true },
+  const passwordHash = await hash(password, 10);
+
+  // Try to find existing user
+  const existing = await prisma.user.findFirst({
+    where: { email: email.toLowerCase() },
   });
 
-  const user = allUsers.find((u) => u.email.toLowerCase().includes(email.toLowerCase()));
-
-  if (!user) {
-    return NextResponse.json({
-      error: "User not found",
-      availableEmails: allUsers.map((u) => u.email),
-    }, { status: 404 });
+  if (existing) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { passwordHash },
+    });
+    return NextResponse.json({ ok: true, action: "password_updated", email: existing.email });
   }
 
-  const passwordHash = await hash(password, 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash },
+  // Create new user
+  const user = await prisma.user.create({
+    data: {
+      email: email.toLowerCase(),
+      name,
+      passwordHash,
+      role: "admin",
+      plan: "pro",
+    },
   });
 
-  return NextResponse.json({ ok: true, email: user.email });
+  return NextResponse.json({ ok: true, action: "user_created", email: user.email, id: user.id });
 }
