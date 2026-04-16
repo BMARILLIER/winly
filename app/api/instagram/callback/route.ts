@@ -8,6 +8,7 @@ import {
   getInstagramProfile,
   encryptToken,
 } from "@/lib/services/instagram";
+import { syncInstagramData } from "@/lib/services/instagram-sync";
 
 const APP_URL = process.env.NODE_ENV === "production"
   ? (process.env.NEXT_PUBLIC_APP_URL ?? "https://localhost:3000")
@@ -82,6 +83,14 @@ export async function GET(request: NextRequest) {
       },
     });
     console.log("[instagram/callback] Connection saved for user:", userId);
+
+    // 5. Auto-sync: fetch followers, media, stats immediately
+    try {
+      const syncResult = await syncInstagramData(userId);
+      console.log("[instagram/callback] Auto-sync done:", syncResult);
+    } catch (syncErr) {
+      console.error("[instagram/callback] Auto-sync failed (non-blocking):", syncErr);
+    }
 
     return NextResponse.redirect(new URL("/settings?ig=success", APP_URL));
   } catch (err) {
