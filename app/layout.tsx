@@ -33,7 +33,7 @@ export const metadata: Metadata = {
       "Analytics, viral score, analyse concurrentielle, contenu IA — 6 outils pour booster ta croissance Instagram. Gratuit.",
     images: [
       {
-        url: "/branding/winly-og.png",
+        url: "/api/og",
         width: 1200,
         height: 630,
         alt: "Winly — Coach IA Instagram",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "Winly — Grandis sur Instagram avec ton coach IA",
     description:
       "Analytics, viral score, coach quotidien — tout pour les createurs Instagram.",
-    images: ["/branding/winly-og.png"],
+    images: ["/api/og"],
   },
   robots: {
     index: true,
