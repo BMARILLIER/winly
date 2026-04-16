@@ -13,6 +13,7 @@ import {
   FileText,
   Anchor,
   Hash,
+  Instagram,
   UserCircle,
   Recycle,
   Fingerprint,
@@ -374,8 +375,16 @@ function SidebarContent({
           );
         })}
 
-        {/* Settings separated at bottom of nav */}
-        <div className="pt-2 mt-2 border-t border-border">
+        {/* Instagram + Settings at bottom of nav */}
+        <div className="pt-2 mt-2 border-t border-border space-y-1">
+          <Link
+            href="/settings"
+            onClick={onNavClick}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 border border-pink-500/30 text-pink-400 hover:from-purple-500/20 hover:via-pink-500/20 hover:to-orange-500/20 transition-all duration-200"
+          >
+            <Instagram className="h-4 w-4 shrink-0" />
+            Instagram
+          </Link>
           <Link
             href="/settings"
             onClick={onNavClick}

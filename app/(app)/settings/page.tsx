@@ -36,13 +36,13 @@ export default async function SettingsPage() {
       <p className="mt-2 text-text-secondary">Gérez votre workspace et vos préférences.</p>
 
       <div className="mt-8 max-w-2xl space-y-8">
+        <Suspense fallback={null}>
+          <InstagramConnection />
+        </Suspense>
         <BillingSection
           plan={billing?.plan ?? "free"}
           hasStripeCustomer={Boolean(billing?.stripeCustomerId)}
         />
-        <Suspense fallback={null}>
-          <InstagramConnection />
-        </Suspense>
         <DailyCoachToggle initialEnabled={dailyCoachEnabled} />
         <WorkspaceSettingsForm workspace={workspace} />
       </div>
