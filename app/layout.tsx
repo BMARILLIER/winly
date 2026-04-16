@@ -13,11 +13,43 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WINLY — Power Your Social Growth",
+  metadataBase: new URL("https://winly-lac.vercel.app"),
+  title: {
+    default: "Winly — Ton coach IA Instagram",
+    template: "%s | Winly",
+  },
   description:
-    "Auditez, scorez et développez votre présence sur les réseaux sociaux avec WINLY.",
+    "Analytics, insights IA, viral score, coach quotidien — tout pour grandir sur Instagram. Gratuit pour commencer.",
   icons: {
     icon: "/icon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "https://winly-lac.vercel.app",
+    siteName: "Winly",
+    title: "Winly — Grandis sur Instagram avec ton coach IA",
+    description:
+      "Analytics, viral score, analyse concurrentielle, contenu IA — 6 outils pour booster ta croissance Instagram. Gratuit.",
+    images: [
+      {
+        url: "/branding/winly-og.png",
+        width: 1200,
+        height: 630,
+        alt: "Winly — Coach IA Instagram",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Winly — Grandis sur Instagram avec ton coach IA",
+    description:
+      "Analytics, viral score, coach quotidien — tout pour les createurs Instagram.",
+    images: ["/branding/winly-og.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

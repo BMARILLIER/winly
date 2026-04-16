@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import {
   exchangeCodeForToken,
   getLongLivedToken,
@@ -92,12 +93,13 @@ export async function GET(request: NextRequest) {
       });
     } catch {
       // Fallback: old schema with @@unique([userId])
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO InstagramConnection (id, userId, igUserId, igUsername, accessToken, tokenExpiresAt, connectedAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-         ON CONFLICT(userId) DO UPDATE SET igUserId=?, igUsername=?, accessToken=?, tokenExpiresAt=?, updatedAt=datetime('now')`,
-        `cig_${Date.now()}`, userId, profile.id, profile.username, encryptToken(longToken), tokenExpiresAt.toISOString(),
-        profile.id, profile.username, encryptToken(longToken), tokenExpiresAt.toISOString(),
+      const connId = `cig_${Date.now()}`;
+      const encToken = encryptToken(longToken);
+      const expiresIso = tokenExpiresAt.toISOString();
+      await prisma.$executeRaw(
+        Prisma.sql`INSERT INTO InstagramConnection (id, userId, igUserId, igUsername, accessToken, tokenExpiresAt, connectedAt, updatedAt)
+         VALUES (${connId}, ${userId}, ${profile.id}, ${profile.username}, ${encToken}, ${expiresIso}, datetime('now'), datetime('now'))
+         ON CONFLICT(userId) DO UPDATE SET igUserId=${profile.id}, igUsername=${profile.username}, accessToken=${encToken}, tokenExpiresAt=${expiresIso}, updatedAt=datetime('now')`,
       );
     }
     console.log("[instagram/callback] Connection saved for user:", userId, "ig:", profile.username);

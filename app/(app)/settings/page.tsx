@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { WorkspaceSettingsForm } from "./workspace-form";
 import { InstagramConnection } from "@/components/settings/instagram-connection";
 import { BillingSection } from "@/components/settings/billing-section";
@@ -21,9 +22,8 @@ export default async function SettingsPage() {
 
   let dailyCoachEnabled = false;
   try {
-    const coachRow = await prisma.$queryRawUnsafe<{ dailyCoachEnabled: number }[]>(
-      `SELECT dailyCoachEnabled FROM User WHERE id = ?`,
-      user.id,
+    const coachRow = await prisma.$queryRaw<{ dailyCoachEnabled: number }[]>(
+      Prisma.sql`SELECT dailyCoachEnabled FROM User WHERE id = ${user.id}`,
     );
     dailyCoachEnabled = coachRow?.[0]?.dailyCoachEnabled === 1;
   } catch {

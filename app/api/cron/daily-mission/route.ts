@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { sendDailyCoachEmail } from "@/lib/services/email";
 import { getDailyContext } from "@/lib/queries/daily-context";
 import { generateDailyMission } from "@/lib/services/daily-mission-ai";
@@ -25,9 +26,8 @@ async function handle(req: Request) {
 
   let users: { id: string; email: string; name: string | null }[] = [];
   try {
-    users = await prisma.$queryRawUnsafe<{ id: string; email: string; name: string | null }[]>(
-      `SELECT id, email, name FROM User WHERE dailyCoachEnabled = 1 AND (lastDailyCoachAt IS NULL OR lastDailyCoachAt < ?)`,
-      cutoff.toISOString(),
+    users = await prisma.$queryRaw<{ id: string; email: string; name: string | null }[]>(
+      Prisma.sql`SELECT id, email, name FROM User WHERE dailyCoachEnabled = 1 AND (lastDailyCoachAt IS NULL OR lastDailyCoachAt < ${cutoff.toISOString()})`,
     );
   } catch {
     // fields don't exist yet — return empty
@@ -52,10 +52,8 @@ async function handle(req: Request) {
 
       if (result.sent) {
         try {
-          await prisma.$executeRawUnsafe(
-            `UPDATE User SET lastDailyCoachAt = ? WHERE id = ?`,
-            new Date().toISOString(),
-            user.id,
+          await prisma.$executeRaw(
+            Prisma.sql`UPDATE User SET lastDailyCoachAt = ${new Date().toISOString()} WHERE id = ${user.id}`,
           );
         } catch { /* column may not exist yet */ }
         sent += 1;

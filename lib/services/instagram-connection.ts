@@ -1,11 +1,6 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
-/**
- * Returns the active Instagram connection for a user.
- * If multiple connections exist, returns the one marked isActive.
- * Falls back to the most recently connected account.
- * Resilient: works even if isActive column doesn't exist yet.
- */
 export async function getActiveConnection(userId: string) {
   try {
     const connections = await prisma.instagramConnection.findMany({
@@ -17,11 +12,10 @@ export async function getActiveConnection(userId: string) {
 
     return connections.find((c) => c.isActive) ?? connections[0];
   } catch {
-    // Fallback: isActive column may not exist yet — use raw query
     try {
-      const rows = await prisma.$queryRawUnsafe<
+      const rows = await prisma.$queryRaw<
         { id: string; userId: string; igUserId: string; igUsername: string; accessToken: string; tokenExpiresAt: string | null; lastSyncAt: string | null; connectedAt: string }[]
-      >(`SELECT * FROM InstagramConnection WHERE userId = ? ORDER BY connectedAt DESC LIMIT 1`, userId);
+      >(Prisma.sql`SELECT * FROM InstagramConnection WHERE userId = ${userId} ORDER BY connectedAt DESC LIMIT 1`);
       if (!rows || rows.length === 0) return null;
       const r = rows[0];
       return {
@@ -42,9 +36,6 @@ export async function getActiveConnection(userId: string) {
   }
 }
 
-/**
- * Same as getActiveConnection but includes snapshots and media.
- */
 export async function getActiveConnectionWithData(
   userId: string,
   opts?: { snapshotsTake?: number; mediaTake?: number },
@@ -63,7 +54,6 @@ export async function getActiveConnectionWithData(
 
     return connections.find((c) => c.isActive) ?? connections[0];
   } catch {
-    // Fallback: query without isActive, then load relations separately
     const conn = await getActiveConnection(userId);
     if (!conn) return null;
     const [snapshots, media] = await Promise.all([
@@ -82,9 +72,6 @@ export async function getActiveConnectionWithData(
   }
 }
 
-/**
- * Returns all connections for a user (for the settings UI).
- */
 export async function getAllConnections(userId: string) {
   try {
     return await prisma.instagramConnection.findMany({
@@ -101,10 +88,9 @@ export async function getAllConnections(userId: string) {
       },
     });
   } catch {
-    // Fallback: isActive column may not exist
-    const rows = await prisma.$queryRawUnsafe<
+    const rows = await prisma.$queryRaw<
       { id: string; igUserId: string; igUsername: string; lastSyncAt: string | null; connectedAt: string; tokenExpiresAt: string | null }[]
-    >(`SELECT id, igUserId, igUsername, lastSyncAt, connectedAt, tokenExpiresAt FROM InstagramConnection WHERE userId = ? ORDER BY connectedAt DESC`, userId);
+    >(Prisma.sql`SELECT id, igUserId, igUsername, lastSyncAt, connectedAt, tokenExpiresAt FROM InstagramConnection WHERE userId = ${userId} ORDER BY connectedAt DESC`);
     return rows.map((r, i) => ({
       id: r.id,
       igUserId: r.igUserId,
@@ -117,9 +103,6 @@ export async function getAllConnections(userId: string) {
   }
 }
 
-/**
- * Set a connection as active and deactivate others for this user.
- */
 export async function setActiveConnection(userId: string, connectionId: string) {
   try {
     await prisma.$transaction([
@@ -133,6 +116,6 @@ export async function setActiveConnection(userId: string, connectionId: string) 
       }),
     ]);
   } catch {
-    // isActive column may not exist yet — silently ignore
+    // isActive column may not exist yet
   }
 }

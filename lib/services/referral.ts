@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 
 const REFERRER_BONUS = 20;
@@ -6,7 +7,7 @@ const REFERRED_BONUS = 5;
 
 async function ensureTable() {
   try {
-    await prisma.$executeRawUnsafe(`
+    await prisma.$executeRaw(Prisma.sql`
       CREATE TABLE IF NOT EXISTS Referral (
         id TEXT PRIMARY KEY,
         referrerId TEXT NOT NULL,
@@ -30,9 +31,8 @@ export async function getReferralCode(userId: string): Promise<string> {
   await ensureTable();
 
   // Check if user already has referrals → derive code from first one
-  const existing = await prisma.$queryRawUnsafe<{ referralCode: string }[]>(
-    `SELECT referralCode FROM Referral WHERE referrerId = ? LIMIT 1`,
-    userId,
+  const existing = await prisma.$queryRaw<{ referralCode: string }[]>(
+    Prisma.sql`SELECT referralCode FROM Referral WHERE referrerId = ${userId} LIMIT 1`,
   ).catch(() => []);
 
   if (existing.length > 0) return existing[0].referralCode;
@@ -49,9 +49,8 @@ export async function getReferralStats(userId: string): Promise<{
   await ensureTable();
   const code = await getReferralCode(userId);
 
-  const rows = await prisma.$queryRawUnsafe<{ cnt: number }[]>(
-    `SELECT COUNT(*) as cnt FROM Referral WHERE referrerId = ?`,
-    userId,
+  const rows = await prisma.$queryRaw<{ cnt: number }[]>(
+    Prisma.sql`SELECT COUNT(*) as cnt FROM Referral WHERE referrerId = ${userId}`,
   ).catch(() => [{ cnt: 0 }]);
 
   const totalReferred = Number(rows[0]?.cnt ?? 0);
@@ -72,9 +71,8 @@ export async function applyReferralCode(
   if (!code || code.length < 6) return { ok: false, error: "Code invalide." };
 
   // Check if already referred
-  const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
-    `SELECT id FROM Referral WHERE referredId = ?`,
-    newUserId,
+  const existing = await prisma.$queryRaw<{ id: string }[]>(
+    Prisma.sql`SELECT id FROM Referral WHERE referredId = ${newUserId}`,
   ).catch(() => []);
 
   if (existing.length > 0) return { ok: false, error: "Deja parraine." };
@@ -90,9 +88,8 @@ export async function applyReferralCode(
   let referrerId: string | null = users[0]?.id ?? null;
 
   if (!referrerId) {
-    const fromReferral = await prisma.$queryRawUnsafe<{ referrerId: string }[]>(
-      `SELECT referrerId FROM Referral WHERE referralCode = ? LIMIT 1`,
-      code.toUpperCase(),
+    const fromReferral = await prisma.$queryRaw<{ referrerId: string }[]>(
+      Prisma.sql`SELECT referrerId FROM Referral WHERE referralCode = ${code.toUpperCase()} LIMIT 1`,
     ).catch(() => []);
     referrerId = fromReferral[0]?.referrerId ?? null;
   }
@@ -103,9 +100,8 @@ export async function applyReferralCode(
 
   // Create referral
   const id = `ref_${Date.now()}_${randomBytes(4).toString("hex")}`;
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO Referral (id, referrerId, referredId, referralCode, creditGranted) VALUES (?, ?, ?, ?, 1)`,
-    id, referrerId, newUserId, code.toUpperCase(),
+  await prisma.$executeRaw(
+    Prisma.sql`INSERT INTO Referral (id, referrerId, referredId, referralCode, creditGranted) VALUES (${id}, ${referrerId}, ${newUserId}, ${code.toUpperCase()}, 1)`,
   );
 
   // Grant credits: bonus to referrer
