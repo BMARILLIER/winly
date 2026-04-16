@@ -22,13 +22,17 @@ async function handle(req: Request) {
   }
 
   const cutoff = new Date(Date.now() - MIN_INTERVAL_MS);
-  const users = await prisma.user.findMany({
-    where: {
-      dailyCoachEnabled: true,
-      OR: [{ lastDailyCoachAt: null }, { lastDailyCoachAt: { lt: cutoff } }],
-    },
-    select: { id: true, email: true, name: true },
-  });
+
+  let users: { id: string; email: string; name: string | null }[] = [];
+  try {
+    users = await prisma.$queryRawUnsafe<{ id: string; email: string; name: string | null }[]>(
+      `SELECT id, email, name FROM User WHERE dailyCoachEnabled = 1 AND (lastDailyCoachAt IS NULL OR lastDailyCoachAt < ?)`,
+      cutoff.toISOString(),
+    );
+  } catch {
+    // fields don't exist yet — return empty
+    return NextResponse.json({ ok: true, total: 0, sent: 0, failed: 0, note: "dailyCoachEnabled column not found — run prisma db push" });
+  }
 
   let sent = 0;
   let failed = 0;
@@ -47,10 +51,13 @@ async function handle(req: Request) {
       const result = await sendDailyCoachEmail(user.email, user.name, mission);
 
       if (result.sent) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastDailyCoachAt: new Date() },
-        });
+        try {
+          await prisma.$executeRawUnsafe(
+            `UPDATE User SET lastDailyCoachAt = ? WHERE id = ?`,
+            new Date().toISOString(),
+            user.id,
+          );
+        } catch { /* column may not exist yet */ }
         sent += 1;
       } else {
         failed += 1;

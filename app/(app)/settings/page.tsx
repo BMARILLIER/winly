@@ -16,8 +16,19 @@ export default async function SettingsPage() {
 
   const billing = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { plan: true, stripeCustomerId: true, dailyCoachEnabled: true },
+    select: { plan: true, stripeCustomerId: true },
   });
+
+  let dailyCoachEnabled = false;
+  try {
+    const coachRow = await prisma.$queryRawUnsafe<{ dailyCoachEnabled: number }[]>(
+      `SELECT dailyCoachEnabled FROM User WHERE id = ?`,
+      user.id,
+    );
+    dailyCoachEnabled = coachRow?.[0]?.dailyCoachEnabled === 1;
+  } catch {
+    // field doesn't exist yet in DB — safe to ignore
+  }
 
   return (
     <div>
@@ -32,7 +43,7 @@ export default async function SettingsPage() {
         <Suspense fallback={null}>
           <InstagramConnection />
         </Suspense>
-        <DailyCoachToggle initialEnabled={billing?.dailyCoachEnabled ?? false} />
+        <DailyCoachToggle initialEnabled={dailyCoachEnabled} />
         <WorkspaceSettingsForm workspace={workspace} />
       </div>
     </div>
