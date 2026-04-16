@@ -388,8 +388,21 @@ function SidebarContent({
           );
         })}
 
-        {/* Instagram + Settings at bottom of nav */}
+        {/* Guide + Instagram + Settings at bottom of nav */}
         <div className="pt-2 mt-2 border-t border-border space-y-1">
+          <Link
+            href="/guide"
+            onClick={onNavClick}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+              isRouteActive(pathname, "/guide")
+                ? "bg-accent-muted text-accent border-l-2 border-accent"
+                : "text-text-secondary hover:bg-surface-2 hover:text-foreground"
+            )}
+          >
+            <Lightbulb className="h-4 w-4 shrink-0" />
+            Guide
+          </Link>
           <Link
             href="/settings"
             onClick={onNavClick}
