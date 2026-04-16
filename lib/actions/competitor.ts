@@ -94,6 +94,10 @@ export async function repurposeFromCompetitor(
     return { ok: false, error: "Clé API non configurée." };
   }
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

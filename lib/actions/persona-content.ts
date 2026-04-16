@@ -48,6 +48,10 @@ export async function generatePersonaContent(
     return { ok: false, error: "Clé API non configurée." };
   }
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   const formatLabels: Record<string, string> = {
     caption: "une caption Instagram (texte seul, 1 à 3 paragraphes)",
     carrousel: "un carrousel (slide 1 = hook, slides 2-8 = points clés, dernière slide = CTA)",

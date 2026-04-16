@@ -51,6 +51,10 @@ export async function analyzeCompetitor(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "Service IA indisponible." };
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(user.id);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   const workspace = user.workspaces[0];
   const niche = workspace?.niche ?? "général";
   const platform = workspace?.mainPlatform ?? "instagram";

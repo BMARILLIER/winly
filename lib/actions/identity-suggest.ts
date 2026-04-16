@@ -33,6 +33,10 @@ export async function suggestIdentityField(
   const cached = await getCachedResponse<string[]>("identity_suggest", cacheKey, niche);
   if (cached) return { ok: true, suggestions: cached };
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

@@ -104,6 +104,10 @@ export async function generateReplies(
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Non authentifié" };
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(user.id);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   const workspace = user.workspaces[0];
   const identity = workspace
     ? await prisma.creatorIdentity.findUnique({

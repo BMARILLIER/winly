@@ -55,12 +55,16 @@ export async function generateHooksWithAI(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: "Clé API non configurée." };
 
-  // Check cache first
+  // Check cache first (cached responses don't consume credits)
   const { getCachedResponse, setCachedResponse } = await import("@/lib/services/ai-cache");
   const cached = await getCachedResponse<string[]>("hooks", topic || niche, niche, hookType ?? "all");
   if (cached) {
     return { ok: true, hooks: cached };
   }
+
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) return { ok: false, error: quota.error };
 
   const typeLabels: Record<string, string> = {
     question: "Question intrigante",

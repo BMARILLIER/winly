@@ -44,6 +44,10 @@ export async function repurposeWithAI(
     return { ok: true, results: local };
   }
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(userId);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   const identityBlock = identityContext
     ? `\n\nProfil du créateur (adapte le ton et le contenu à cette identité) :\n${identityContext}`
     : "";

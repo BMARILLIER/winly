@@ -60,6 +60,10 @@ export async function analyzeViralScore(
     return { ok: false, error: "Service IA indisponible. Réessaie plus tard." };
   }
 
+  const { checkAndConsumeGeneration } = await import("@/modules/content-generator");
+  const quota = await checkAndConsumeGeneration(user.id);
+  if (!quota.ok) return { ok: false, error: quota.error };
+
   const workspace = user.workspaces[0];
   const platform = input.platform || workspace?.mainPlatform || "instagram";
   const niche = input.niche || workspace?.niche || "général";

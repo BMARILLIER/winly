@@ -1,36 +1,40 @@
 import Link from "next/link";
 import { Zap, Crown } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { getQuotaStatus } from "@/modules/content-generator";
 
 export async function QuotaBadge({ userId }: { userId: string }) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { plan: true, generationsUsed: true, generationsReset: true },
-  });
-  if (!user) return null;
+  const { used, limit, remaining, plan } = await getQuotaStatus(userId);
 
-  // Reset virtuel mensuel (même règle que le module content-generator)
-  const now = new Date();
-  const needsReset =
-    !user.generationsReset ||
-    user.generationsReset.getUTCFullYear() !== now.getUTCFullYear() ||
-    user.generationsReset.getUTCMonth() !== now.getUTCMonth();
-  const used = needsReset ? 0 : user.generationsUsed;
-
-  if (user.plan === "pro") {
+  if (plan === "pro") {
+    const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+    const nearLimit = remaining <= 20;
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs">
-        <Crown className="h-3.5 w-3.5 text-accent" />
-        <span className="font-medium text-accent">Pro — générations illimitées</span>
+      <div className="rounded-lg border border-accent/30 bg-accent/10 p-3">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5">
+            <Crown className="h-3.5 w-3.5 text-accent" />
+            <span className="font-medium text-accent">
+              Pro — {used}/{limit} crédits IA ce mois
+            </span>
+          </div>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-accent/20">
+          <div
+            className={`h-full transition-all ${nearLimit ? "bg-warning" : "bg-accent"}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        {nearLimit && remaining > 0 && (
+          <p className="mt-2 text-xs text-warning">
+            Plus que {remaining} crédits ce mois.
+          </p>
+        )}
       </div>
     );
   }
 
-  const limit = PLANS.FREE.generationsLimit;
-  const remaining = Math.max(0, limit - used);
-  const pct = Math.min(100, Math.round((used / limit) * 100));
-  const nearLimit = remaining <= 1;
+  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const nearLimit = remaining <= 2;
 
   return (
     <div className="rounded-lg border border-border bg-surface-2 p-3">
@@ -38,7 +42,7 @@ export async function QuotaBadge({ userId }: { userId: string }) {
         <div className="flex items-center gap-1.5">
           <Zap className={`h-3.5 w-3.5 ${nearLimit ? "text-danger" : "text-accent"}`} />
           <span className="font-medium text-foreground">
-            {used}/{limit} générations ce mois
+            {used}/{limit} crédits IA ce mois
           </span>
         </div>
         <Link href="/pricing" className="font-medium text-accent hover:underline">
@@ -56,8 +60,8 @@ export async function QuotaBadge({ userId }: { userId: string }) {
       {nearLimit && (
         <p className="mt-2 text-xs text-danger">
           {remaining === 0
-            ? "Limite atteinte. Passe Pro pour débloquer."
-            : `Plus qu'${remaining} génération. Passe Pro pour l'illimité.`}
+            ? "Limite atteinte. Passe Pro pour 200 crédits/mois."
+            : `Plus que ${remaining} crédit${remaining > 1 ? "s" : ""}. Passe Pro pour 200/mois.`}
         </p>
       )}
     </div>

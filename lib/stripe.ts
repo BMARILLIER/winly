@@ -20,14 +20,14 @@ export const PLANS = {
     id: "free",
     name: "Free",
     price: 0,
-    generationsLimit: 5,
+    generationsLimit: 10,
     personasLimit: 1,
   },
   PRO: {
     id: "pro",
     name: "Pro",
     priceEur: 19,
-    generationsLimit: Infinity,
+    generationsLimit: 200,
     personasLimit: 3,
   },
 } as const;
