@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/daily-mission",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/smart-notifications",
+      "schedule": "0 8,14,18,21 * * *"
     }
   ]
 }
