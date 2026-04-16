@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 import { CreatorScoreView } from "./creator-score-view";
 
 export default async function CreatorScorePage() {
@@ -15,10 +16,7 @@ export default async function CreatorScorePage() {
       where: { userId: user.id, workspaceId: workspace.id },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.instagramConnection.findUnique({
-      where: { userId: user.id },
-      select: { igUsername: true },
-    }),
+    getActiveConnection(user.id),
   ]);
 
   const report = latestScore

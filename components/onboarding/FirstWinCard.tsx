@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, Instagram, FileText, ClipboardCheck, Rocket } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 type Step = {
   id: string;
@@ -18,10 +19,7 @@ export async function FirstWinCard({
   workspaceId: string;
 }) {
   const [igConnection, contentCount, auditCount] = await Promise.all([
-    prisma.instagramConnection.findUnique({
-      where: { userId },
-      select: { id: true },
-    }),
+    getActiveConnection(userId),
     prisma.contentIdea.count({ where: { workspaceId } }),
     prisma.auditResult.count({ where: { userId } }),
   ]);

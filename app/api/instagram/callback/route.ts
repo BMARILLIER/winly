@@ -63,26 +63,33 @@ export async function GET(request: NextRequest) {
     const profile = await getInstagramProfile(longToken);
     console.log("[instagram/callback] Profile:", profile.username);
 
-    // 4. Store encrypted token
+    // 4. Store encrypted token (supports multi-account)
     const tokenExpiresAt = new Date(Date.now() + expires_in * 1000);
 
-    await prisma.instagramConnection.upsert({
+    // Deactivate all existing connections, then upsert the new one as active
+    await prisma.instagramConnection.updateMany({
       where: { userId },
+      data: { isActive: false },
+    });
+
+    await prisma.instagramConnection.upsert({
+      where: { userId_igUserId: { userId, igUserId: profile.id } },
       create: {
         userId,
         igUserId: profile.id,
         igUsername: profile.username,
         accessToken: encryptToken(longToken),
         tokenExpiresAt,
+        isActive: true,
       },
       update: {
-        igUserId: profile.id,
         igUsername: profile.username,
         accessToken: encryptToken(longToken),
         tokenExpiresAt,
+        isActive: true,
       },
     });
-    console.log("[instagram/callback] Connection saved for user:", userId);
+    console.log("[instagram/callback] Connection saved for user:", userId, "ig:", profile.username);
 
     // 5. Auto-sync: fetch followers, media, stats immediately
     try {

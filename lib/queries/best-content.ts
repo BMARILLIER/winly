@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 export interface BestContent {
   id: string;
@@ -47,9 +48,7 @@ export async function queryBestContent(
   }
 
   // 2. InstagramMedia (best engagement)
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-  });
+  const connection = await getActiveConnection(userId);
 
   if (connection) {
     const media = await prisma.instagramMedia.findMany({

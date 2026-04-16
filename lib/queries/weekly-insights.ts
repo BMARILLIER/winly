@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 export interface WeeklyPostStat {
   igMediaId: string;
@@ -41,10 +42,7 @@ export async function getWeeklyInsights(userId: string): Promise<WeeklyInsights>
     select: { niche: true },
   });
 
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
+  const connection = await getActiveConnection(userId);
 
   if (!connection) {
     return {

@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 export interface CompetitorPostInput {
   caption: string;
@@ -60,10 +61,7 @@ export async function analyzeCompetitor(
   const platform = workspace?.mainPlatform ?? "instagram";
 
   // Récupère les top posts de l'user pour comparaison (si IG connecté)
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId: user.id },
-    select: { id: true },
-  });
+  const connection = await getActiveConnection(user.id);
 
   let userTopPosts: { caption: string | null; likes: number; comments: number; type: string }[] = [];
   if (connection) {

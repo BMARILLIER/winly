@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 import type { DailyMissionContext } from "@/lib/services/daily-mission-ai";
 
 export async function getDailyContext(userId: string): Promise<DailyMissionContext> {
@@ -7,10 +8,7 @@ export async function getDailyContext(userId: string): Promise<DailyMissionConte
     select: { niche: true },
   });
 
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
+  const connection = await getActiveConnection(userId);
 
   if (!connection) {
     return {

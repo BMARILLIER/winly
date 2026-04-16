@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 import { decryptToken, encryptToken, refreshLongLivedToken } from "./instagram";
 import {
   fetchProfile,
@@ -56,9 +57,7 @@ export interface SyncResult {
 
 export async function syncInstagramData(userId: string): Promise<SyncResult> {
   // 1. Get connection
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-  });
+  const connection = await getActiveConnection(userId);
 
   if (!connection) {
     return { ok: false, error: "Aucune connexion Instagram trouvée." };

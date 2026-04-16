@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 import { PLATFORMS } from "@/lib/workspace-constants";
 import { queryBestContent } from "@/lib/queries/best-content";
 import { getInstagramMetrics } from "@/lib/services/instagram-metrics";
@@ -28,10 +29,7 @@ export default async function DashboardPage() {
   const bestContent = await queryBestContent(workspace.id, user.id);
 
   // Check Instagram connection status
-  const igConnection = await prisma.instagramConnection.findUnique({
-    where: { userId: user.id },
-    select: { igUsername: true, lastSyncAt: true },
-  });
+  const igConnection = await getActiveConnection(user.id);
 
   // Count content ideas
   const contentCount = await prisma.contentIdea.count({

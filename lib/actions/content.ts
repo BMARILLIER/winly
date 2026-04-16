@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 const createContentSchema = z.object({
   workspaceId: z.string().min(1, "Workspace not found."),
@@ -198,10 +199,7 @@ export async function generateContentWithAI(
         where: { workspaceId: workspace.id },
         select: { tone: true, values: true, catchphrases: true, avoid: true, audience: true },
       }),
-      prisma.instagramConnection.findUnique({
-        where: { userId },
-        select: { id: true },
-      }),
+      getActiveConnection(userId),
     ]);
 
     let topPosts: { caption: string | null; likes: number; comments: number; type: string }[] = [];

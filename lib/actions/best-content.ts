@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 export interface BestContent {
   id: string;
@@ -55,9 +56,7 @@ export async function getBestContentToRepurpose(
   }
 
   // 2. Check InstagramMedia (best engagement = likes + comments)
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-  });
+  const connection = await getActiveConnection(userId);
 
   if (connection) {
     const media = await prisma.instagramMedia.findMany({

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 
 const MOCK_USERNAME = "barbara.crowft_dj";
 const MOCK_IG_USER_ID = "mock_17841400000000";
@@ -39,9 +40,7 @@ export async function injectMockInstagramData(): Promise<{
 
   try {
     // Clean existing mock data
-    const existing = await prisma.instagramConnection.findUnique({
-      where: { userId: user.id },
-    });
+    const existing = await getActiveConnection(user.id);
 
     if (existing) {
       await prisma.instagramMedia.deleteMany({ where: { connectionId: existing.id } });
@@ -127,9 +126,7 @@ export async function clearMockInstagramData(): Promise<{ ok: boolean; error?: s
   const user = await requireAdmin();
 
   try {
-    const existing = await prisma.instagramConnection.findUnique({
-      where: { userId: user.id },
-    });
+    const existing = await getActiveConnection(user.id);
 
     if (existing) {
       await prisma.instagramMedia.deleteMany({ where: { connectionId: existing.id } });

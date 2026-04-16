@@ -8,7 +8,7 @@
  * Returns null when Instagram is not connected or no data exists.
  */
 
-import { prisma } from "@/lib/db";
+import { getActiveConnectionWithData } from "@/lib/services/instagram-connection";
 import type { GrowthEngineInput } from "@/modules/growth-engine";
 
 // ─── Types ───
@@ -66,13 +66,7 @@ export interface InstagramMetrics {
 export async function getInstagramMetrics(
   userId: string
 ): Promise<InstagramMetrics | null> {
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId },
-    include: {
-      snapshots: { orderBy: { createdAt: "desc" }, take: 90 },
-      media: { orderBy: { timestamp: "desc" }, take: 25 },
-    },
-  });
+  const connection = await getActiveConnectionWithData(userId);
 
   if (!connection || connection.snapshots.length === 0) return null;
 

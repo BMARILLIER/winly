@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getActiveConnection } from "@/lib/services/instagram-connection";
 import { decryptToken } from "@/lib/services/instagram";
 import { fetchMediaComments, type IgComment } from "@/lib/services/instagram-client";
 
@@ -32,9 +33,7 @@ export async function getRecentComments(): Promise<CommentsPageData> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Non authentifié" };
 
-  const connection = await prisma.instagramConnection.findUnique({
-    where: { userId: user.id },
-  });
+  const connection = await getActiveConnection(user.id);
   if (!connection) {
     return { ok: false, error: "Instagram non connecté. Connecte-le dans les paramètres." };
   }
