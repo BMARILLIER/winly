@@ -62,6 +62,38 @@ export async function POST(req: Request) {
         break;
       }
 
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId = subscription.metadata?.userId;
+        const customerId =
+          typeof subscription.customer === "string" ? subscription.customer : null;
+        const isActive = subscription.status === "active" || subscription.status === "trialing";
+        const newPlan = isActive ? "pro" : "free";
+
+        if (userId) {
+          await prisma.user.update({
+            where: { id: userId },
+            data: { plan: newPlan },
+          });
+        } else if (customerId) {
+          await prisma.user.updateMany({
+            where: { stripeCustomerId: customerId },
+            data: { plan: newPlan },
+          });
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId =
+          typeof invoice.customer === "string" ? invoice.customer : null;
+        if (customerId) {
+          console.warn("[stripe-webhook] Payment failed for customer:", customerId);
+        }
+        break;
+      }
+
       default:
         break;
     }
